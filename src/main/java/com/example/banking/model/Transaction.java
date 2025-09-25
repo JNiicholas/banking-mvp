@@ -8,13 +8,16 @@ public class Transaction {
     public enum Type { DEPOSIT, WITHDRAW }
 
     private UUID id;
+    private UUID accountId;
     private Instant timestamp;
     private Type type;
     private BigDecimal amount;
     private BigDecimal balanceAfter;
 
-    public Transaction(UUID id, Instant timestamp, Type type, BigDecimal amount, BigDecimal balanceAfter) {
+
+    public Transaction(UUID id, UUID accountId, Instant timestamp, Type type, BigDecimal amount, BigDecimal balanceAfter) {
         this.id = id;
+        this.accountId = accountId;
         this.timestamp = timestamp;
         this.type = type;
         this.amount = amount;

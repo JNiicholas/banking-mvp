@@ -1,4 +1,3 @@
-
 package com.example.banking.service;
 
 import com.example.banking.dto.CreateAccountRequest;
@@ -64,7 +63,7 @@ public class AccountService {
         synchronized (a) {
             BigDecimal newBal = a.getBalance().add(amount);
             a.setBalance(newBal);
-            Transaction tx = new Transaction(UUID.randomUUID(), Instant.now(), Transaction.Type.DEPOSIT, amount, newBal);
+            Transaction tx = new Transaction(UUID.randomUUID(), accountId, Instant.now(), Transaction.Type.DEPOSIT, amount, newBal);
             transactionRepository.save(transactionEntityMapper.toEntity(tx));
             accountRepository.save(accountEntityMapper.toEntity(a));
             return a;
@@ -83,7 +82,7 @@ public class AccountService {
             }
             BigDecimal newBal = a.getBalance().subtract(amount);
             a.setBalance(newBal);
-            Transaction tx = new Transaction(UUID.randomUUID(), Instant.now(), Transaction.Type.WITHDRAW, amount, newBal);
+            Transaction tx = new Transaction(UUID.randomUUID(), accountId, Instant.now(), Transaction.Type.WITHDRAW, amount, newBal);
             transactionRepository.save(transactionEntityMapper.toEntity(tx));
             accountRepository.save(accountEntityMapper.toEntity(a));
             return a;
