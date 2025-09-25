@@ -1,21 +1,23 @@
 package com.example.banking.repository;
 
-import com.example.banking.model.Account;
-import org.springframework.stereotype.Repository;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import com.example.banking.Entity.AccountEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 
-@Repository
-public class AccountRepository {
-    private final Map<UUID, Account> store = new ConcurrentHashMap<>();
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Query;
 
-    public Account save(Account a) {
-        store.put(a.getId(), a);
-        return a;
-    }
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
-    public Optional<Account> findById(UUID id) {
-        return Optional.ofNullable(store.get(id));
-    }
+public interface AccountRepository extends JpaRepository<AccountEntity, UUID> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select a from AccountEntity a where a.id = :id")
+    Optional<AccountEntity> findByIdForUpdate(UUID id);
+
+    // For listing a customer’s accounts
+    List<AccountEntity> findByCustomerId(UUID customerId);
 }

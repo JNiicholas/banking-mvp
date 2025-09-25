@@ -1,21 +1,13 @@
 package com.example.banking.repository;
 
-import com.example.banking.model.Customer;
-import org.springframework.stereotype.Repository;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import com.example.banking.Entity.CustomerEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-@Repository
-public class CustomerRepository {
-    private final Map<UUID, Customer> store = new ConcurrentHashMap<>();
+import java.util.Optional;
+import java.util.UUID;
 
-    public Customer save(Customer c) {
-        store.put(c.getId(), c);
-        return c;
-    }
-
-    public Optional<Customer> findById(UUID id) {
-        return Optional.ofNullable(store.get(id));
-    }
+public interface CustomerRepository extends JpaRepository<CustomerEntity, UUID> {
+    Optional<CustomerEntity> findByEmail(String email);
+    boolean existsByEmail(String email);
 }

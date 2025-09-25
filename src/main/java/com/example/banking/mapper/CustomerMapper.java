@@ -1,5 +1,6 @@
 package com.example.banking.mapper;
 
+import com.example.banking.Entity.CustomerEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 import com.example.banking.model.Customer;
@@ -10,6 +11,6 @@ public interface CustomerMapper {
     CustomerMapper INSTANCE = Mappers.getMapper(CustomerMapper.class);
 
     CustomerResponse toResponse(Customer customer);
-
     Customer toEntity(CustomerResponse response);
+    Customer toDomain(CustomerEntity entity);
 }
