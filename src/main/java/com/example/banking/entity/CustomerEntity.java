@@ -17,6 +17,7 @@ import java.util.UUID;
 public class CustomerEntity {
 
     @Id
+    @GeneratedValue
     private UUID id;
 
     @Column(nullable = false, length = 100)

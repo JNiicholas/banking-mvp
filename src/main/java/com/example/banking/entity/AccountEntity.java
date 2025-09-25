@@ -13,6 +13,7 @@ import java.util.UUID;
 @Setter
 public class AccountEntity {
     @Id
+    @GeneratedValue
     private UUID id;
     @Column(nullable=false)
     private UUID customerId;

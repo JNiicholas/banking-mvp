@@ -20,7 +20,10 @@ public class CustomerService {
     }
 
     public Customer createCustomer(CreateCustomerRequest req) {
+        // temporarily, to verify binding:
+        System.out.println("CreateCustomerRequest -> name=" + req.name() + ", email=" + req.email());
         Customer c = new Customer(UUID.randomUUID(), req.name(), req.email());
+        CustomerEntity CustomerEntityToSave = customerEntityMapper.toEntity(c);
         CustomerEntity saved = customerRepository.save(customerEntityMapper.toEntity(c));
         return customerEntityMapper.toDomain(saved);
     }
