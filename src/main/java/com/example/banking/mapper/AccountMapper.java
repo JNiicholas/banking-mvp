@@ -1,17 +1,24 @@
 package com.example.banking.mapper;
 
 import com.example.banking.entity.AccountEntity;
-import org.mapstruct.Mapper;
-import org.mapstruct.factory.Mappers;
 import com.example.banking.model.Account;
 import com.example.banking.dto.AccountResponse;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
-
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface AccountMapper {
-    AccountMapper INSTANCE = Mappers.getMapper(AccountMapper.class);
 
+    // Domain -> DTO
+    @Mapping(target = "id", source = "id")
+    @Mapping(target = "customerId", source = "customerId")
+    @Mapping(target = "balance", source = "balance")
     AccountResponse toResponse(Account account);
-    Account toEntity(AccountResponse response);
+
+    // Entity -> Domain
+    @Mapping(target = "id", source = "id")
+    @Mapping(target = "customerId", source = "customerId")
+    @Mapping(target = "balance", source = "balance")
     Account toDomain(AccountEntity entity);
 }
