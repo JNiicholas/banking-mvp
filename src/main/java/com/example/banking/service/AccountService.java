@@ -4,15 +4,19 @@ package com.example.banking.service;
 import com.example.banking.dto.CreateAccountRequest;
 import com.example.banking.exception.BadRequestException;
 import com.example.banking.exception.NotFoundException;
+import com.example.banking.mapper.AccountEntityMapper;
+import com.example.banking.mapper.CustomerEntityMapper;
+import com.example.banking.mapper.TransactionEntityMapper;
 import com.example.banking.model.Account;
 import com.example.banking.model.Customer;
 import com.example.banking.model.Transaction;
 import com.example.banking.repository.AccountRepository;
 import com.example.banking.repository.CustomerRepository;
-import com.example.banking.mapper.AccountEntityMapper;
-import com.example.banking.mapper.CustomerEntityMapper;
-import org.springframework.stereotype.Service;
+import com.example.banking.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -24,8 +28,10 @@ import java.util.UUID;
 public class AccountService {
     private final AccountRepository accountRepository;
     private final CustomerRepository customerRepository;
+    private final TransactionRepository transactionRepository;
     private final AccountEntityMapper accountEntityMapper;
     private final CustomerEntityMapper customerEntityMapper;
+    private final TransactionEntityMapper transactionEntityMapper;
 
 
     public Account createAccount(CreateAccountRequest req) {
@@ -49,6 +55,7 @@ public class AccountService {
                 .orElseThrow(() -> new NotFoundException("Account not found: " + id));
     }
 
+    @Transactional
     public synchronized Account deposit(UUID accountId, BigDecimal amount) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BadRequestException("Amount must be positive");
@@ -58,12 +65,13 @@ public class AccountService {
             BigDecimal newBal = a.getBalance().add(amount);
             a.setBalance(newBal);
             Transaction tx = new Transaction(UUID.randomUUID(), Instant.now(), Transaction.Type.DEPOSIT, amount, newBal);
-            a.addTransaction(tx);
+            transactionRepository.save(transactionEntityMapper.toEntity(tx));
             accountRepository.save(accountEntityMapper.toEntity(a));
             return a;
         }
     }
 
+    @Transactional
     public synchronized Account withdraw(UUID accountId, BigDecimal amount) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BadRequestException("Amount must be positive");
@@ -76,7 +84,7 @@ public class AccountService {
             BigDecimal newBal = a.getBalance().subtract(amount);
             a.setBalance(newBal);
             Transaction tx = new Transaction(UUID.randomUUID(), Instant.now(), Transaction.Type.WITHDRAW, amount, newBal);
-            a.addTransaction(tx);
+            transactionRepository.save(transactionEntityMapper.toEntity(tx));
             accountRepository.save(accountEntityMapper.toEntity(a));
             return a;
         }
@@ -87,7 +95,11 @@ public class AccountService {
     }
 
     public List<Transaction> getLastTransactions(UUID accountId, int limit) {
-        if (limit <= 0) limit = 10;
-        return getAccount(accountId).getLatestTransactions(limit);
+        int n = Math.max(1, limit);
+        var page = PageRequest.of(0, n);
+        return transactionRepository.findRecentByAccountId(accountId, page)
+                .stream()
+                .map(transactionEntityMapper::toDomain)
+                .toList();
     }
 }

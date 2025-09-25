@@ -1,6 +1,6 @@
 package com.example.banking.service;
 
-import com.example.banking.Entity.CustomerEntity;
+import com.example.banking.entity.CustomerEntity;
 import com.example.banking.dto.CreateCustomerRequest;
 import com.example.banking.model.Customer;
 import com.example.banking.mapper.CustomerEntityMapper;

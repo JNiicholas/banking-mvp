@@ -1,7 +1,7 @@
 package com.example.banking.repository;
 
 
-import com.example.banking.Entity.AccountEntity;
+import com.example.banking.entity.AccountEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 

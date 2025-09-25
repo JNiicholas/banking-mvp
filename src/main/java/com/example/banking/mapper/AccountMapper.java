@@ -1,6 +1,6 @@
 package com.example.banking.mapper;
 
-import com.example.banking.Entity.AccountEntity;
+import com.example.banking.entity.AccountEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 import com.example.banking.model.Account;

@@ -1,6 +1,7 @@
 package com.example.banking.controller;
 
 import com.example.banking.dto.*;
+import com.example.banking.mapper.TransactionMapper;
 import com.example.banking.model.Account;
 import com.example.banking.mapper.AccountMapper;
 import com.example.banking.model.Transaction;
@@ -26,6 +27,7 @@ import io.swagger.v3.oas.annotations.Operation;
 public class AccountController {
     private final AccountService accountService;
     private final AccountMapper accountMapper;
+    private final TransactionMapper transactionMapper;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -60,8 +62,6 @@ public class AccountController {
     public List<TransactionResponse> lastTransactions(@PathVariable("id") UUID id,
                                                       @RequestParam(name="limit", defaultValue="10") int limit) {
         List<Transaction> txs = accountService.getLastTransactions(id, limit);
-        return txs.stream().map(t -> new TransactionResponse(
-                t.getId(), t.getTimestamp(), t.getType().name(), t.getAmount(), t.getBalanceAfter()
-        )).collect(Collectors.toList());
+        return txs.stream().map(transactionMapper::toResponse).collect(Collectors.toList());
     }
 }

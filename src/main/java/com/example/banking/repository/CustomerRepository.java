@@ -1,7 +1,7 @@
 package com.example.banking.repository;
 
 
-import com.example.banking.Entity.CustomerEntity;
+import com.example.banking.entity.CustomerEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

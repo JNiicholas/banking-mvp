@@ -24,8 +24,19 @@ CREATE TABLE postings (
                           amount NUMERIC(19,4) NOT NULL -- positive=debit, negative=credit (or vice versa)
 );
 
+CREATE TABLE IF NOT EXISTS transactions (
+                                            id UUID PRIMARY KEY,
+                                            account_id UUID NOT NULL REFERENCES accounts(id),
+    timestamp TIMESTAMPTZ NOT NULL DEFAULT now(),
+    type VARCHAR(16) NOT NULL,
+    amount NUMERIC(19,4) NOT NULL,
+    balance_after NUMERIC(19,4) NOT NULL
+    );
+
 -- Optional: enforce balanced entries (sum=0) with a deferred constraint via trigger
 -- (Implement with a trigger function in V2 if you want hard guarantees.)
 
 CREATE INDEX idx_accounts_customer ON accounts(customer_id);
 CREATE INDEX idx_postings_account ON postings(account_id);
+CREATE INDEX IF NOT EXISTS idx_tx_account_ts_desc
+    ON transactions (account_id, timestamp DESC, id DESC);
