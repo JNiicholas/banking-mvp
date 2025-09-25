@@ -20,7 +20,7 @@ public class CustomerService {
     }
 
     public Customer createCustomer(CreateCustomerRequest req) {
-        Customer c = new Customer(UUID.randomUUID(), req.getName(), req.getEmail());
+        Customer c = new Customer(UUID.randomUUID(), req.name(), req.email());
         CustomerEntity saved = customerRepository.save(customerEntityMapper.toEntity(c));
         return customerEntityMapper.toDomain(saved);
     }

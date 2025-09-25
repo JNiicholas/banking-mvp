@@ -40,14 +40,14 @@ public class AccountController {
     @PostMapping("/{id}/deposit")
     @Operation(summary = "Deposit money", description = "Deposits a given amount into the account and returns updated balance")
     public AccountResponse deposit(@PathVariable("id") UUID id, @RequestBody @Valid AmountRequest req) {
-        Account deposit = accountService.deposit(id, req.getAmount());
+        Account deposit = accountService.deposit(id, req.amount());
         return accountMapper.toResponse(deposit);
     }
 
     @PostMapping("/{id}/withdraw")
     @Operation(summary = "Withdraw money", description = "Withdraws a given amount from the account if sufficient funds exist")
     public AccountResponse withdraw(@PathVariable("id") UUID id, @RequestBody @Valid AmountRequest req) {
-        Account withdraw = accountService.withdraw(id, req.getAmount());
+        Account withdraw = accountService.withdraw(id, req.amount());
         return accountMapper.toResponse(withdraw);
     }
 

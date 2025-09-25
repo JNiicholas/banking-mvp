@@ -34,9 +34,9 @@ public class AccountService {
 
 
     public Account createAccount(CreateAccountRequest req) {
-        Customer c = customerRepository.findById(req.getCustomerId())
+        Customer c = customerRepository.findById(req.customerId())
                 .map(customerEntityMapper::toDomain)
-                .orElseThrow(() -> new NotFoundException("Customer not found: " + req.getCustomerId()));
+                .orElseThrow(() -> new NotFoundException("Customer not found: " + req.customerId()));
         Account a = new Account(UUID.randomUUID(), c.getId());
         var saved = accountRepository.save(accountEntityMapper.toEntity(a));
         return accountEntityMapper.toDomain(saved);

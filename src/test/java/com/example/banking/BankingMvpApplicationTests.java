@@ -28,14 +28,11 @@ class BankingMvpApplicationTests {
     @Test
     void depositAndWithdrawFlow() {
         // create customer
-        CreateCustomerRequest cr = new CreateCustomerRequest();
-        cr.setName("Alice");
-        cr.setEmail("alice@example.com");
+        CreateCustomerRequest cr = new CreateCustomerRequest("Alice", "alice@example.com");
         Customer c = customerService.createCustomer(cr);
 
         // create account
-        CreateAccountRequest ar = new CreateAccountRequest();
-        ar.setCustomerId(c.getId());
+        CreateAccountRequest ar = new CreateAccountRequest(c.getId());
         Account a = accountService.createAccount(ar);
 
         // deposit 100
