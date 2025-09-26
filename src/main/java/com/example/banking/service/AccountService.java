@@ -1,6 +1,7 @@
 package com.example.banking.service;
 
 import com.example.banking.dto.CreateAccountRequest;
+import com.example.banking.entity.AccountEntity;
 import com.example.banking.exception.BadRequestException;
 import com.example.banking.exception.NotFoundException;
 import com.example.banking.mapper.AccountEntityMapper;
@@ -55,38 +56,45 @@ public class AccountService {
     }
 
     @Transactional
-    public synchronized Account deposit(UUID accountId, BigDecimal amount) {
+    public Account deposit(UUID accountId, BigDecimal amount) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BadRequestException("Amount must be positive");
         }
-        Account a = getAccountForUpdate(accountId);
-        synchronized (a) {
-            BigDecimal newBal = a.getBalance().add(amount);
-            a.setBalance(newBal);
-            Transaction tx = new Transaction(UUID.randomUUID(), accountId, Instant.now(), Transaction.Type.DEPOSIT, amount, newBal);
-            transactionRepository.save(transactionEntityMapper.toEntity(tx));
-            accountRepository.save(accountEntityMapper.toEntity(a));
-            return a;
-        }
+
+        AccountEntity entity = accountRepository.findByIdForUpdate(accountId)
+                .orElseThrow(() -> new NotFoundException("Account not found: " + accountId));
+
+        BigDecimal newBal = entity.getBalance().add(amount);
+        entity.setBalance(newBal);
+        accountRepository.save(entity);
+
+        Transaction tx = new Transaction(UUID.randomUUID(), accountId, Instant.now(), Transaction.Type.DEPOSIT, amount, newBal);
+        transactionRepository.save(transactionEntityMapper.toEntity(tx));
+
+        return accountEntityMapper.toDomain(entity);
     }
 
     @Transactional
-    public synchronized Account withdraw(UUID accountId, BigDecimal amount) {
+    public Account withdraw(UUID accountId, BigDecimal amount) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BadRequestException("Amount must be positive");
         }
-        Account a = getAccountForUpdate(accountId);
-        synchronized (a) {
-            if (a.getBalance().compareTo(amount) < 0) {
-                throw new BadRequestException("Insufficient funds");
-            }
-            BigDecimal newBal = a.getBalance().subtract(amount);
-            a.setBalance(newBal);
-            Transaction tx = new Transaction(UUID.randomUUID(), accountId, Instant.now(), Transaction.Type.WITHDRAW, amount, newBal);
-            transactionRepository.save(transactionEntityMapper.toEntity(tx));
-            accountRepository.save(accountEntityMapper.toEntity(a));
-            return a;
+
+        AccountEntity entity = accountRepository.findByIdForUpdate(accountId)
+                .orElseThrow(() -> new NotFoundException("Account not found: " + accountId));
+
+        if (entity.getBalance().compareTo(amount) < 0) {
+            throw new BadRequestException("Insufficient funds");
         }
+
+        BigDecimal newBal = entity.getBalance().subtract(amount);
+        entity.setBalance(newBal);
+        accountRepository.save(entity);
+
+        Transaction tx = new Transaction(UUID.randomUUID(), accountId, Instant.now(), Transaction.Type.WITHDRAW, amount, newBal);
+        transactionRepository.save(transactionEntityMapper.toEntity(tx));
+
+        return accountEntityMapper.toDomain(entity);
     }
 
     public BigDecimal getBalance(UUID accountId) {
