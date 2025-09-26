@@ -1,0 +1,165 @@
+package com.example.banking.controller;
+
+import com.example.banking.dto.AccountResponse;
+import com.example.banking.dto.AmountRequest;
+import com.example.banking.dto.CreateAccountRequest;
+import com.example.banking.dto.TransactionResponse;
+import com.example.banking.exception.NotFoundException;
+import com.example.banking.mapper.AccountMapper;
+import com.example.banking.mapper.TransactionMapper;
+import com.example.banking.model.Account;
+import com.example.banking.model.Transaction;
+import com.example.banking.service.api.AccountService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.BDDMockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+import static org.mockito.ArgumentMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@WebMvcTest(AccountController.class)
+class AccountControllerTest {
+
+    @Autowired MockMvc mvc;
+    @Autowired ObjectMapper objectMapper;
+
+    @MockBean AccountService accountService;     // use interface
+    @MockBean AccountMapper accountMapper;       // controller uses this to map domain -> DTO
+    @MockBean TransactionMapper transactionMapper;
+
+    @Test
+    @DisplayName("POST /accounts -> 201 Created with body (+optional Location)")
+    void create_ok() throws Exception {
+        UUID id = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+
+        var req = new CreateAccountRequest(customerId);
+        var domain = Account.builder().id(id).customerId(customerId).balance(new BigDecimal("0.0000")).build();
+        var dto = new AccountResponse(id, customerId, new BigDecimal("0.0000"));
+
+        BDDMockito.given(accountService.createAccount(eq(req))).willReturn(domain);
+        BDDMockito.given(accountMapper.toResponse(eq(domain))).willReturn(dto);
+
+        mvc.perform(post("/accounts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                // If your controller returns 200 OK instead, change to isOk()
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(id.toString()))
+                .andExpect(jsonPath("$.customerId").value(customerId.toString()))
+                .andExpect(jsonPath("$.balance").value(0.0));
+        // If your controller sets Location, you can add:
+        // .andExpect(header().string("Location", "/accounts/" + id));
+    }
+
+    @Test
+    @DisplayName("GET /accounts/{id} -> 200 with AccountResponse")
+    void getById_ok() throws Exception {
+        UUID id = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+        var domain = Account.builder().id(id).customerId(customerId).balance(new BigDecimal("100.0000")).build();
+        var dto = new AccountResponse(id, customerId, new BigDecimal("100.0000"));
+
+        BDDMockito.given(accountService.getAccount(eq(id))).willReturn(domain);
+        BDDMockito.given(accountMapper.toResponse(eq(domain))).willReturn(dto);
+
+        mvc.perform(get("/accounts/{id}", id))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(id.toString()))
+                .andExpect(jsonPath("$.customerId").value(customerId.toString()))
+                .andExpect(jsonPath("$.balance").value(100.0));
+    }
+
+    @Test
+    @DisplayName("GET /accounts/{id} -> 404 when not found")
+    void getById_notFound() throws Exception {
+        UUID id = UUID.randomUUID();
+        BDDMockito.given(accountService.getAccount(eq(id))).willThrow(new NotFoundException("Account not found"));
+
+        mvc.perform(get("/accounts/{id}", id))
+                .andExpect(status().isNotFound());
+        // If you assert ApiError shape, also check $.code == NOT_FOUND, etc.
+    }
+
+    @Test
+    @DisplayName("POST /accounts/{id}/deposit -> 200 with updated AccountResponse")
+    void deposit_ok() throws Exception {
+        UUID id = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+
+        var req = new AmountRequest(new BigDecimal("50.00"));
+        var updated = Account.builder().id(id).customerId(customerId).balance(new BigDecimal("150.0000")).build();
+        var dto = new AccountResponse(id, customerId, new BigDecimal("150.0000"));
+
+        BDDMockito.given(accountService.deposit(eq(id), eq(req.amount()))).willReturn(updated);
+        BDDMockito.given(accountMapper.toResponse(eq(updated))).willReturn(dto);
+
+        mvc.perform(post("/accounts/{id}/deposit", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id.toString()))
+                .andExpect(jsonPath("$.balance").value(150.0));
+    }
+
+    @Test
+    @DisplayName("POST /accounts/{id}/withdraw -> 200 with updated AccountResponse")
+    void withdraw_ok() throws Exception {
+        UUID id = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+
+        var req = new AmountRequest(new BigDecimal("25.00"));
+        var updated = Account.builder().id(id).customerId(customerId).balance(new BigDecimal("75.0000")).build();
+        var dto = new AccountResponse(id, customerId, new BigDecimal("75.0000"));
+
+        BDDMockito.given(accountService.withdraw(eq(id), eq(req.amount()))).willReturn(updated);
+        BDDMockito.given(accountMapper.toResponse(eq(updated))).willReturn(dto);
+
+        mvc.perform(post("/accounts/{id}/withdraw", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id.toString()))
+                .andExpect(jsonPath("$.balance").value(75.0));
+    }
+
+    @Test
+    @DisplayName("GET /accounts/{id}/transactions?limit=10 -> 200 with list")
+    void listTransactions_ok() throws Exception {
+        UUID id = UUID.randomUUID();
+        var tx1 = new Transaction(UUID.randomUUID(), id, Instant.parse("2025-01-01T00:00:00Z"),
+                Transaction.Type.DEPOSIT, new BigDecimal("100.00"), new BigDecimal("100.0000"));
+        var tx2 = new Transaction(UUID.randomUUID(), id, Instant.parse("2025-01-02T00:00:00Z"),
+                Transaction.Type.WITHDRAW, new BigDecimal("20.00"), new BigDecimal("80.0000"));
+
+        var dto1 = new TransactionResponse(tx1.getId(), tx1.getTimestamp(), "DEPOSIT",
+                tx1.getAmount(), tx1.getBalanceAfter());
+        var dto2 = new TransactionResponse(tx2.getId(), tx2.getTimestamp(), "WITHDRAW",
+                tx2.getAmount(), tx2.getBalanceAfter());
+
+        BDDMockito.given(accountService.getLastTransactions(eq(id), eq(10))).willReturn(List.of(tx1, tx2));
+        BDDMockito.given(transactionMapper.toResponse(eq(tx1))).willReturn(dto1);
+        BDDMockito.given(transactionMapper.toResponse(eq(tx2))).willReturn(dto2);
+
+        mvc.perform(get("/accounts/{id}/transactions", id).param("limit", "10"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$[0].id").value(tx1.getId().toString()))
+                .andExpect(jsonPath("$[0].type").value("DEPOSIT"))
+                .andExpect(jsonPath("$[1].type").value("WITHDRAW"));
+    }
+}

@@ -51,6 +51,13 @@ public class AccountController {
         return accountMapper.toResponse(withdraw);
     }
 
+    @GetMapping("/{id}")
+    @Operation(summary = "Get account by id", description = "Fetches an account by its identifier")
+    public AccountResponse getById(@PathVariable("id") UUID id) {
+        Account account = accountService.getAccount(id);
+        return accountMapper.toResponse(account);
+    }
+
     @GetMapping("/{id}/balance")
     @Operation(summary = "Get account balance", description = "Fetches the current balance of the account")
     public BigDecimal balance(@PathVariable("id") UUID id) {

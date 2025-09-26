@@ -5,12 +5,16 @@ import com.example.banking.dto.CustomerResponse;
 import com.example.banking.mapper.CustomerMapper;
 import com.example.banking.model.Customer;
 import com.example.banking.service.api.CustomerService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.Operation;
+
+import java.net.URI;
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/customers")
@@ -22,10 +26,25 @@ public class CustomerController {
     private final CustomerMapper customerMapper;
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create a new customer", description = "Creates a new customer and returns the customer details")
-    public CustomerResponse create(@RequestBody @Valid CreateCustomerRequest req) {
+    public ResponseEntity<CustomerResponse> create(@RequestBody @Valid CreateCustomerRequest req) {
         Customer customer = customerService.createCustomer(req);
+        CustomerResponse body = customerMapper.toResponse(customer);
+        return ResponseEntity.created(URI.create("/customers/" + body.id())).body(body);
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Get customer by id", description = "Returns a single customer by its id")
+    public CustomerResponse getById(@PathVariable("id") UUID id) {
+        Customer customer = customerService.getCustomer(id);
         return customerMapper.toResponse(customer);
+    }
+
+    @GetMapping
+    @Operation(summary = "List customers", description = "Returns all customers")
+    public List<CustomerResponse> list() {
+        return customerService.getAllCustomers().stream()
+                .map(customerMapper::toResponse)
+                .toList();
     }
 }
