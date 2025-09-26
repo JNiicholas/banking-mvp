@@ -42,10 +42,9 @@ class AccountEntityMapperTest {
                 .balance(new BigDecimal("0.0000"))
                 .build();
 
-        AccountEntity entity = mapper.toEntity(domain);
+        AccountEntity entity = mapper.toNewEntity(domain);
 
         assertNotNull(entity);
-        assertEquals(id, entity.getId());
         assertEquals(customerId, entity.getCustomerId());
         assertEquals(0, entity.getBalance().compareTo(new BigDecimal("0.0000")));
         // version is managed by JPA; we don’t assert it here

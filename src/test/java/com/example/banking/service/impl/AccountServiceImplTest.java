@@ -55,7 +55,7 @@ class AccountServiceImplTest {
                         .id(customerId).name("Jonas").email("jonas@iqbal.dk").build()));
 
 
-        given(accountEntityMapper.toEntity(any(Account.class)))
+        given(accountEntityMapper.toNewEntity(any(Account.class)))
                 .willAnswer(inv -> {
                     Account a = inv.getArgument(0);
                     var e = new AccountEntity();

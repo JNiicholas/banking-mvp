@@ -40,8 +40,17 @@ public class AccountServiceImpl implements AccountService {
         Customer c = customerRepository.findById(req.customerId())
                 .map(customerEntityMapper::toDomain)
                 .orElseThrow(() -> new NotFoundException("Customer not found: " + req.customerId()));
-        Account a = new Account(UUID.randomUUID(), c.getId());
-        var saved = accountRepository.save(accountEntityMapper.toEntity(a));
+
+        // Build a domain object without an id; DB/JPA will generate id and version
+        Account a = Account.builder()
+                .customerId(c.getId())
+                .balance(BigDecimal.ZERO)
+                .build();
+
+        // Use the new mapper method that intentionally ignores id/version for inserts
+        AccountEntity toSave = accountEntityMapper.toNewEntity(a);
+        AccountEntity saved = accountRepository.save(toSave);
+
         return accountEntityMapper.toDomain(saved);
     }
 
@@ -70,7 +79,7 @@ public class AccountServiceImpl implements AccountService {
         entity.setBalance(newBal);
         accountRepository.save(entity);
 
-        Transaction tx = new Transaction(UUID.randomUUID(), accountId, Instant.now(), Transaction.Type.DEPOSIT, amount, newBal);
+        Transaction tx = new Transaction(null, accountId, Instant.now(), Transaction.Type.DEPOSIT, amount, newBal);
         transactionRepository.save(transactionEntityMapper.toEntity(tx));
 
         return accountEntityMapper.toDomain(entity);

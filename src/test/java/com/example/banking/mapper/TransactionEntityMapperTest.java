@@ -54,7 +54,6 @@ class TransactionEntityMapperTest {
         TransactionEntity entity = mapper.toEntity(domain);
 
         assertNotNull(entity);
-        assertEquals(id, entity.getId());
         assertEquals(accountId, entity.getAccountId());
         assertEquals(0, entity.getAmount().compareTo(new BigDecimal("123.4500")));
         assertEquals(now, entity.getTimestamp());

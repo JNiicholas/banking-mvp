@@ -17,7 +17,7 @@ public interface TransactionEntityMapper {
     @Mapping(target = "balanceAfter", source = "balanceAfter")
     Transaction toDomain(TransactionEntity entity);
 
-    @Mapping(target = "id", source = "id")
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "accountId", source = "accountId")
     @Mapping(target = "timestamp", source = "timestamp")
     @Mapping(target = "type", source = "type")

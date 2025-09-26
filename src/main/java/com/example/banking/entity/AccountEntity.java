@@ -21,5 +21,5 @@ public class AccountEntity {
     private BigDecimal balance;
 
     @Version
-    private long version;
+    private Long version;
 }
