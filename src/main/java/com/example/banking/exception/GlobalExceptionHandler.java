@@ -6,6 +6,7 @@ import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -61,7 +62,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(err);
     }
 
-    @ExceptionHandler({ObjectOptimisticLockingFailureException.class, OptimisticLockException.class})
+    @ExceptionHandler({ObjectOptimisticLockingFailureException.class, OptimisticLockingFailureException.class, OptimisticLockException.class})
     public ResponseEntity<ApiError> handleOptimistic(Exception ex, ServletWebRequest req) {
         String traceId = MDC.get("traceId");
         log.warn("Optimistic lock conflict at {}", req.getRequest().getRequestURI(), ex);
