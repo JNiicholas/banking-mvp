@@ -3,7 +3,6 @@ package com.example.banking.concurrency.service;
 import com.example.banking.dto.CreateAccountRequest;
 import com.example.banking.entity.CustomerEntity;
 import com.example.banking.exception.BadRequestException;
-import com.example.banking.exception.NotFoundException;
 import com.example.banking.model.Account;
 import com.example.banking.repository.AccountRepository;
 import com.example.banking.repository.CustomerRepository;
@@ -16,13 +15,16 @@ import org.springframework.dao.OptimisticLockingFailureException;
 
 import java.math.BigDecimal;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
 
 @SpringBootTest
 class ConcurrencyServiceTest {
@@ -35,9 +37,14 @@ class ConcurrencyServiceTest {
 
     private UUID accountId;
     private UUID customerId;
+    private static final Logger log = LoggerFactory.getLogger(ConcurrencyServiceTest.class);
+    private String runId;
 
     @BeforeEach
     void setUp() {
+
+        runId = UUID.randomUUID().toString().substring(0, 8);
+        log.info("[{}] setUp: creating customer and account", runId);
         // Create a customer
         var customer = customerRepository.save(
                 CustomerEntity.builder()
@@ -50,27 +57,42 @@ class ConcurrencyServiceTest {
         Account created = accountService.createAccount(new CreateAccountRequest(customer.getId()));
         accountId = created.getId();
 
+        log.info("[{}] Created accountId={} for customerId={}", runId, accountId, customerId);
         // Seed with a known balance (optional; here keep 0.0000)
     }
 
     // --- Helper to run tasks in parallel and wait for them ---
+// --- Helper to run tasks in parallel and wait for them ---
     private static void runConcurrently(int threads, Runnable barrierTask) throws InterruptedException {
-        ExecutorService pool = Executors.newFixedThreadPool(threads);
+        ExecutorService pool = Executors.newFixedThreadPool(threads, r -> {
+            Thread t = new Thread(r);
+            t.setName("concurrency-test-" + t.getId());
+            return t;
+        });
         CyclicBarrier barrier = new CyclicBarrier(threads);
         CountDownLatch done = new CountDownLatch(threads);
+        long start = System.nanoTime();
         for (int i = 0; i < threads; i++) {
             pool.submit(() -> {
+                String tn = Thread.currentThread().getName();
                 try {
+                    LoggerFactory.getLogger(ConcurrencyServiceTest.class).info("[barrier] {} waiting", tn);
                     barrier.await(5, TimeUnit.SECONDS); // synchronize start
+                    LoggerFactory.getLogger(ConcurrencyServiceTest.class).info("[start ] {} running", tn);
                     barrierTask.run();
-                } catch (Exception ignored) {
+                    LoggerFactory.getLogger(ConcurrencyServiceTest.class).info("[done  ] {} finished ok", tn);
+                } catch (Exception e) {
+                    LoggerFactory.getLogger(ConcurrencyServiceTest.class).info("[error ] {} failed: {}", tn, e.toString());
                 } finally {
                     done.countDown();
                 }
             });
         }
-        assertTrue(done.await(10, TimeUnit.SECONDS), "Tasks did not complete in time");
+        boolean completed = done.await(10, TimeUnit.SECONDS);
+        long durMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        LoggerFactory.getLogger(ConcurrencyServiceTest.class).info("[suite ] parallel run completed={} in {} ms", completed, durMs);
         pool.shutdownNow();
+        assertTrue(completed, "Tasks did not complete in time");
     }
 
     @Test
@@ -81,6 +103,8 @@ class ConcurrencyServiceTest {
         AtomicInteger successes = new AtomicInteger();
         AtomicInteger conflicts = new AtomicInteger();
         List<Throwable> others = new CopyOnWriteArrayList<>();
+
+        log.info("[{}] Starting two concurrent deposits of 100.00 on account {}", runId, accountId);
 
         runConcurrently(2, () -> {
             try {
@@ -102,6 +126,9 @@ class ConcurrencyServiceTest {
         BigDecimal balance = accountService.getBalance(accountId);
         assertEquals(0, balance.compareTo(new BigDecimal("200.0000")),
                 "Final balance must reflect both successful writes under locking");
+
+        log.info("[{}] Results: successes={}, conflicts={}, others={}", runId, successes.get(), conflicts.get(), others.size());
+        log.info("[{}] Final balance after concurrent deposits: {}", runId, balance);
     }
 
     @Test
@@ -112,6 +139,8 @@ class ConcurrencyServiceTest {
 
         AtomicInteger successes = new AtomicInteger();
         List<Throwable> failures = new CopyOnWriteArrayList<>();
+
+        log.info("[{}] Starting {} parallel deposits of {} on account {}", runId, threads, delta, accountId);
 
         runConcurrently(threads, () -> {
             try {
@@ -130,12 +159,16 @@ class ConcurrencyServiceTest {
         BigDecimal actual = accountService.getBalance(accountId);
         assertEquals(0, expected.compareTo(actual),
                 "Final balance must equal sum of successful deposits");
+
+        log.info("[{}] successes={}, failures={} (stackErrors? {})", runId, successes.get(), failures.size(), failures.isEmpty() ? "no" : "yes");
+        log.info("[{}] expected={}, actual={}", runId, expected, actual);
     }
 
     @Test
     @DisplayName("Concurrent withdraw from just-enough balance: one succeeds, one fails business rule")
     void concurrentWithdrawals_withInsufficientAfterFirst() {
         // Seed: deposit 100.00 first (single-thread)
+        log.info("[{}] Seeding balance with 100.00 for account {}", runId, accountId);
         accountService.deposit(accountId, new BigDecimal("100.00"));
 
         AtomicInteger success = new AtomicInteger();
@@ -155,6 +188,7 @@ class ConcurrencyServiceTest {
             }
         };
 
+        log.info("[{}] Running two concurrent withdrawals of 100.00", runId);
         // Run two withdraw(100) in parallel against balance=100
         assertTimeoutPreemptively(Duration.ofSeconds(10), () -> runConcurrently(2, withdraw100));
 
@@ -163,13 +197,59 @@ class ConcurrencyServiceTest {
         assertEquals(1, businessFail.get() + conflicts.get(),
                 "The other should fail by business rule or conflict");
 
+        log.info("[{}] withdraw results: success={}, businessFail={}, conflicts={}", runId, success.get(), businessFail.get(), conflicts.get());
+
         // Final balance is either 0.0000 (if second failed business) or 0.0000 (conflict still yields one success)
         BigDecimal actual = accountService.getBalance(accountId);
         assertEquals(0, actual.compareTo(new BigDecimal("0.0000")));
+        log.info("[{}] Final balance after concurrent withdrawals: {}", runId, actual);
+    }
+
+    @Test
+    @DisplayName("Concurrent overdraft attempts: no negative balance, only one success")
+    void concurrentWithdrawals_overdraft_noNegativeBalance() throws InterruptedException {
+        // Seed the account with a known balance of 100.00
+        log.info("[{}] Seeding balance with 100.00 for account {}", runId, accountId);
+        accountService.deposit(accountId, new BigDecimal("100.00"));
+
+        int threads = 8; // many concurrent attempts
+        AtomicInteger success = new AtomicInteger();
+        AtomicInteger businessFail = new AtomicInteger();
+        AtomicInteger conflicts = new AtomicInteger();
+        java.util.concurrent.CopyOnWriteArrayList<Throwable> others = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        Runnable withdraw100 = () -> {
+            try {
+                accountService.withdraw(accountId, new BigDecimal("100.00"));
+                success.incrementAndGet();
+            } catch (BadRequestException e) {
+                log.info("[{}] overdraft blocked: {}", runId, e.getMessage());
+                businessFail.incrementAndGet(); // insufficient funds path
+            } catch (OptimisticLockingFailureException e) {
+                conflicts.incrementAndGet(); // shouldn't happen with pessimistic locking
+            } catch (Throwable t) {
+                others.add(t);
+            }
+        };
+
+        log.info("[{}] Running {} concurrent withdrawals of 100.00 (overdraft scenario)", runId, threads);
+        runConcurrently(threads, withdraw100);
+
+        // Exactly one withdrawal should succeed; the rest must fail by business rule (or conflict in non-locking variants)
+        assertEquals(1, success.get(), "Exactly one withdrawal should succeed from a 100.00 balance");
+        assertEquals(threads - 1, businessFail.get() + conflicts.get(), "All other withdrawals must fail");
+        assertTrue(others.isEmpty(), "Unexpected exceptions: " + others);
+
+        // Final balance must never be negative; with one success it must be 0.0000
+        BigDecimal finalBalance = accountService.getBalance(accountId);
+        log.info("[{}] Final balance after overdraft concurrency test: {}", runId, finalBalance);
+        assertEquals(0, finalBalance.compareTo(new BigDecimal("0.0000")), "Final balance must be 0.0000 (no negative balances)");
     }
 
     @AfterEach
     void tearDown() {
+
+        log.info("[{}] tearDown: cleaning test data (accountId={}, customerId={})", runId, accountId, customerId);
         // Clean just what we created in this class (keeps your manual local data separate)
         if (accountId != null) {
             // delete child rows first to satisfy FK constraint
@@ -180,5 +260,6 @@ class ConcurrencyServiceTest {
             // delete the customer after its accounts are gone
             customerRepository.deleteById(customerId);
         }
+        log.info("[{}] tearDown: done", runId);
     }
 }
