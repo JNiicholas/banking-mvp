@@ -5,7 +5,7 @@ import com.example.banking.mapper.TransactionMapper;
 import com.example.banking.model.Account;
 import com.example.banking.mapper.AccountMapper;
 import com.example.banking.model.Transaction;
-import com.example.banking.service.AccountService;
+import com.example.banking.service.api.AccountService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;

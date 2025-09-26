@@ -1,4 +1,4 @@
-package com.example.banking.service;
+package com.example.banking.service.impl;
 
 import com.example.banking.dto.CreateAccountRequest;
 import com.example.banking.entity.AccountEntity;
@@ -13,6 +13,7 @@ import com.example.banking.model.Transaction;
 import com.example.banking.repository.AccountRepository;
 import com.example.banking.repository.CustomerRepository;
 import com.example.banking.repository.TransactionRepository;
+import com.example.banking.service.api.AccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class AccountService {
+public class AccountServiceImpl implements AccountService {
     private final AccountRepository accountRepository;
     private final CustomerRepository customerRepository;
     private final TransactionRepository transactionRepository;
@@ -34,6 +35,7 @@ public class AccountService {
     private final TransactionEntityMapper transactionEntityMapper;
 
 
+    @Override
     public Account createAccount(CreateAccountRequest req) {
         Customer c = customerRepository.findById(req.customerId())
                 .map(customerEntityMapper::toDomain)
@@ -43,6 +45,7 @@ public class AccountService {
         return accountEntityMapper.toDomain(saved);
     }
 
+    @Override
     public Account getAccount(UUID id) {
         return accountRepository.findById(id)
                 .map(accountEntityMapper::toDomain)
@@ -55,6 +58,7 @@ public class AccountService {
                 .orElseThrow(() -> new NotFoundException("Account not found: " + id));
     }
 
+    @Override
     @Transactional
     public Account deposit(UUID accountId, BigDecimal amount) {
         validateAmount(amount);
@@ -72,6 +76,7 @@ public class AccountService {
         return accountEntityMapper.toDomain(entity);
     }
 
+    @Override
     @Transactional
     public Account withdraw(UUID accountId, BigDecimal amount) {
         validateAmount(amount);
@@ -93,10 +98,12 @@ public class AccountService {
         return accountEntityMapper.toDomain(entity);
     }
 
+    @Override
     public BigDecimal getBalance(UUID accountId) {
         return getAccount(accountId).getBalance();
     }
 
+    @Override
     public List<Transaction> getLastTransactions(UUID accountId, int limit) {
         int n = Math.max(1, limit);
         var page = PageRequest.of(0, n);

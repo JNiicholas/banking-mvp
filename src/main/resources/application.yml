@@ -1,5 +1,10 @@
 server:
   port: 8080
+  # Never expose server internals in exceptions
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
 
 spring:
   application:

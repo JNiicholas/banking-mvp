@@ -4,7 +4,7 @@ import com.example.banking.dto.CreateCustomerRequest;
 import com.example.banking.dto.CustomerResponse;
 import com.example.banking.mapper.CustomerMapper;
 import com.example.banking.model.Customer;
-import com.example.banking.service.CustomerService;
+import com.example.banking.service.api.CustomerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
