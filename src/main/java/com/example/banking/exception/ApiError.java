@@ -2,23 +2,20 @@ package com.example.banking.exception;
 
 import java.time.Instant;
 
-public class ApiError {
-    private Instant timestamp = Instant.now();
-    private int status;
-    private String error;
-    private String message;
-    private String path;
-
+public record ApiError(
+        Instant timestamp,
+        int status,
+        String error,
+        String message,
+        String path,
+        String code,
+        String traceId
+) {
     public ApiError(int status, String error, String message, String path) {
-        this.status = status;
-        this.error = error;
-        this.message = message;
-        this.path = path;
+        this(Instant.now(), status, error, message, path, null, null);
     }
 
-    public Instant getTimestamp() { return timestamp; }
-    public int getStatus() { return status; }
-    public String getError() { return error; }
-    public String getMessage() { return message; }
-    public String getPath() { return path; }
+    public ApiError(int status, String error, String message, String path, String code, String traceId) {
+        this(Instant.now(), status, error, message, path, code, traceId);
+    }
 }
