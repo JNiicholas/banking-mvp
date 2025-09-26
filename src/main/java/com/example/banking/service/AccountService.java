@@ -57,9 +57,7 @@ public class AccountService {
 
     @Transactional
     public Account deposit(UUID accountId, BigDecimal amount) {
-        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BadRequestException("Amount must be positive");
-        }
+        validateAmount(amount);
 
         AccountEntity entity = accountRepository.findByIdForUpdate(accountId)
                 .orElseThrow(() -> new NotFoundException("Account not found: " + accountId));
@@ -76,9 +74,7 @@ public class AccountService {
 
     @Transactional
     public Account withdraw(UUID accountId, BigDecimal amount) {
-        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BadRequestException("Amount must be positive");
-        }
+        validateAmount(amount);
 
         AccountEntity entity = accountRepository.findByIdForUpdate(accountId)
                 .orElseThrow(() -> new NotFoundException("Account not found: " + accountId));
@@ -108,5 +104,11 @@ public class AccountService {
                 .stream()
                 .map(transactionEntityMapper::toDomain)
                 .toList();
+    }
+
+    private static void validateAmount(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BadRequestException("Amount must be positive");
+        }
     }
 }
