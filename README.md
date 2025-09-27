@@ -20,17 +20,84 @@ mvn spring-boot:run
 ```
 Server starts on :8080.
 
+## Run with Docker Compose
+```bash
+docker-compose up --build
+```
+This starts the application and any dependent services defined in `docker-compose.yml`.
+
 ## Docs
 ```bash
 mvn clean generate-resources
 ```
 
+## Project Lombok
+
+Project Lombok reduces Java boilerplate (getters/setters, constructors, builders, logging) by generating code at **compile time** via annotation processing. Lombok hooks into the Java compiler and modifies the **javac Abstract Syntax Tree (AST)** (often called the *compile tree*). When you annotate a class (e.g., with `@Getter`, `@Setter`, `@Builder`, `@Value`), Lombok injects the corresponding members into the AST *before* bytecode is written, so the generated methods/constructors are present in the compiled classes but not in your source files.
+
+**Key points**
+- **Annotation processor**: Lombok runs as a compile-time processor that alters the AST. IDEs must enable **annotation processing** and usually need the **Lombok plugin** for correct code insight and navigation.
+- **Common annotations**: `@Getter`, `@Setter`, `@ToString`, `@EqualsAndHashCode`, `@RequiredArgsConstructor`, `@AllArgsConstructor`, `@NoArgsConstructor`, `@Builder`, `@Value`, `@Data`, and loggers like `@Slf4j`.
+- **Delombok**: To inspect generated code or for tools that require explicit sources, use *delombok* to materialize the generated members into plain Java sources.
+
+**Official resources**
+- Lombok home: https://projectlombok.org
+- Feature overview: https://projectlombok.org/features
+- IDE setup / annotation processing: https://projectlombok.org/setup/overview
+- Delombok: https://projectlombok.org/features/delombok
+
 ## Security (OWASP Dependency-Check)
-OWASP Dependency-Check scans project dependencies for known security vulnerabilities.
+**OWASP Dependency-Check** identifies known CVEs in third‑party dependencies by analyzing project artifacts (Maven, Gradle, etc.) and matching them to NVD/CPE data. It produces an HTML/JSON/XML report.
+
+### How to run (Maven)
 ```bash
-mvn org.owasp:dependency-check-maven:check
+# Run a scan and generate a report
+mvn -U org.owasp:dependency-check-maven:check
+
+# (Optional) Only update the local vulnerability database
+mvn org.owasp:dependency-check-maven:updateonly
 ```
-An HTML report will be generated at `target/dependency-check-report.html`.
+
+### Where to find the report
+- HTML: `target/dependency-check-report.html`
+- JSON: `target/dependency-check-report.json`
+- XML:  `target/dependency-check-report.xml`
+
+### Useful plugin configuration (pom.xml)
+```xml
+<plugin>
+  <groupId>org.owasp</groupId>
+  <artifactId>dependency-check-maven</artifactId>
+  <version>12.1.6</version>
+  <executions>
+    <execution>
+      <goals>
+        <goal>check</goal>
+      </goals>
+    </execution>
+  </executions>
+  <configuration>
+    <!-- Fail the build if a vulnerability with CVSS >= 7.0 is found -->
+    <failOnCVSS>7.0</failOnCVSS>
+    <!-- Optionally point to a suppression file for false positives -->
+    <!-- <suppressionFiles>
+         <suppressionFile>dependency-check-suppressions.xml</suppressionFile>
+       </suppressionFiles> -->
+    <!-- Use an NVD API key from environment (see below) -->
+    <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
+  </configuration>
+</plugin>
+```
+
+### Obtain and use an NVD API Key
+1. Request a key from NVD (you need an account).
+2. Store it as an environment variable, e.g. `NVD_API_KEY`.
+3. Expose it to the plugin via `<nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>` as shown above.
+
+**Official resources**
+- Dependency-Check docs (Maven): https://jeremylong.github.io/DependencyCheck/dependency-check-maven/index.html
+- Project repository: https://github.com/jeremylong/DependencyCheck
+- NVD API key request: https://nvd.nist.gov/developers/request-an-api-key
 
 ## Example API calls
 
@@ -70,6 +137,8 @@ mvn -q -DskipTests=false test
 ```
 
 ## Notes
-- In-memory repositories for MVP (no database). Thread-safe maps with per-account synchronization.
+- Uses an in-memory H2 database for data persistence.
+- Basic CRUD APIs for customers and accounts, with transaction support (deposit/withdraw).
 - Validation and error handling via `@ControllerAdvice`.
-- Amounts use `BigDecimal` with 2 fraction digits; positive amounts enforced.
+- OWASP Dependency-Check integrated into the build for security scanning.
+- Project Lombok used for reducing boilerplate code.
