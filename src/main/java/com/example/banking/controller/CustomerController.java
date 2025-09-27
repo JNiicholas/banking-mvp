@@ -11,6 +11,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.net.URI;
 import java.util.List;
@@ -27,7 +29,7 @@ public class CustomerController {
 
     @PostMapping
     @Operation(summary = "Create a new customer", description = "Creates a new customer and returns the customer details")
-    public ResponseEntity<CustomerResponse> create(@RequestBody @Valid CreateCustomerRequest req) {
+    public ResponseEntity<CustomerResponse> create(@RequestBody @Valid CreateCustomerRequest req, @AuthenticationPrincipal Jwt jwt) {
         Customer customer = customerService.createCustomer(req);
         CustomerResponse body = customerMapper.toResponse(customer);
         return ResponseEntity.created(URI.create("/customers/" + body.id())).body(body);
@@ -35,14 +37,14 @@ public class CustomerController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Get customer by id", description = "Returns a single customer by its id")
-    public CustomerResponse getById(@PathVariable("id") UUID id) {
+    public CustomerResponse getById(@PathVariable("id") UUID id, @AuthenticationPrincipal Jwt jwt) {
         Customer customer = customerService.getCustomer(id);
         return customerMapper.toResponse(customer);
     }
 
     @GetMapping
     @Operation(summary = "List customers", description = "Returns all customers")
-    public List<CustomerResponse> list() {
+    public List<CustomerResponse> list(@AuthenticationPrincipal Jwt jwt) {
         return customerService.getAllCustomers().stream()
                 .map(customerMapper::toResponse)
                 .toList();

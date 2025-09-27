@@ -20,6 +20,9 @@ import java.util.stream.Collectors;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+
 @RestController
 @RequestMapping("/accounts")
 @RequiredArgsConstructor
@@ -32,42 +35,43 @@ public class AccountController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create a new account", description = "Creates a new account for an existing customer")
-    public AccountResponse create(@RequestBody @Valid CreateAccountRequest req) {
+    public AccountResponse create(@RequestBody @Valid CreateAccountRequest req, @AuthenticationPrincipal Jwt jwt) {
         Account account = accountService.createAccount(req);
         return accountMapper.toResponse(account);
     }
 
     @PostMapping("/{id}/deposit")
     @Operation(summary = "Deposit money", description = "Deposits a given amount into the account and returns updated balance")
-    public AccountResponse deposit(@PathVariable("id") UUID id, @RequestBody @Valid AmountRequest req) {
+    public AccountResponse deposit(@PathVariable("id") UUID id, @RequestBody @Valid AmountRequest req, @AuthenticationPrincipal Jwt jwt) {
         Account deposit = accountService.deposit(id, req.amount());
         return accountMapper.toResponse(deposit);
     }
 
     @PostMapping("/{id}/withdraw")
     @Operation(summary = "Withdraw money", description = "Withdraws a given amount from the account if sufficient funds exist")
-    public AccountResponse withdraw(@PathVariable("id") UUID id, @RequestBody @Valid AmountRequest req) {
+    public AccountResponse withdraw(@PathVariable("id") UUID id, @RequestBody @Valid AmountRequest req, @AuthenticationPrincipal Jwt jwt) {
         Account withdraw = accountService.withdraw(id, req.amount());
         return accountMapper.toResponse(withdraw);
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get account by id", description = "Fetches an account by its identifier")
-    public AccountResponse getById(@PathVariable("id") UUID id) {
+    public AccountResponse getById(@PathVariable("id") UUID id, @AuthenticationPrincipal Jwt jwt) {
         Account account = accountService.getAccount(id);
         return accountMapper.toResponse(account);
     }
 
     @GetMapping("/{id}/balance")
     @Operation(summary = "Get account balance", description = "Fetches the current balance of the account")
-    public BigDecimal balance(@PathVariable("id") UUID id) {
+    public BigDecimal balance(@PathVariable("id") UUID id, @AuthenticationPrincipal Jwt jwt) {
         return accountService.getBalance(id);
     }
 
     @GetMapping("/{id}/transactions")
     @Operation(summary = "List recent transactions", description = "Returns the last N transactions of the account (default 10)")
     public List<TransactionResponse> lastTransactions(@PathVariable("id") UUID id,
-                                                      @RequestParam(name="limit", defaultValue="10") int limit) {
+                                                      @RequestParam(name="limit", defaultValue="10") int limit,
+                                                      @AuthenticationPrincipal Jwt jwt) {
         List<Transaction> txs = accountService.getLastTransactions(id, limit);
         return txs.stream().map(transactionMapper::toResponse).collect(Collectors.toList());
     }
