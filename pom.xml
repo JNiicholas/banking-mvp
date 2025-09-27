@@ -107,6 +107,11 @@
         <groupId>org.asciidoctor</groupId>
         <artifactId>asciidoctor-maven-plugin</artifactId>
         <version>2.2.4</version>
+        <configuration>
+          <requires>
+            <require>asciidoctor-diagram</require>
+          </requires>
+        </configuration>
         <!-- We run twice: once for HTML, once for PDF -->
         <executions>
           <execution>
@@ -150,6 +155,8 @@
                 <revdate>${maven.build.timestamp}</revdate>
                 <pdf-theme>default</pdf-theme>
                 <diagram-on>true</diagram-on>
+                <diagram-format>png</diagram-format>
+                <imagesoutdir>${project.build.directory}/docs/pdf/images</imagesoutdir>
                 <allow-uri-read>true</allow-uri-read>
               </attributes>
             </configuration>
@@ -263,4 +270,3 @@
     </plugins>
   </build>
 </project>
-

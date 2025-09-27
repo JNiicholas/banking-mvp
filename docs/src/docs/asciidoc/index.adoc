@@ -29,7 +29,7 @@ OpenAPI spec (JSON): link:http://localhost:8080/v3/api-docs[ /v3/api-docs ]
 The following diagram shows the high-level components:
 
 [plantuml, target=architecture, format=svg]
-----
+....
 @startuml
 title High-Level Architecture
 
@@ -45,12 +45,12 @@ User --> FE
 FE --> SB
 [Repository] --> DB
 @enduml
-----
+....
 
 == Login Flow (Sequence)
 
 [plantuml, target=login-seq, format=svg]
-----
+....
 @startuml
 autonumber
 actor User
@@ -64,7 +64,7 @@ BE -> DB: Validate user
 DB --> BE: OK / Not Found
 BE --> FE: 200 OK + JWT (or 401)
 @enduml
-----
+....
 
 == Configuration
 You can externalize configuration via `application.yml`:
