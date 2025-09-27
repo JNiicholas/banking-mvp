@@ -20,6 +20,11 @@ mvn spring-boot:run
 ```
 Server starts on :8080.
 
+## Docs
+```bash
+mvn clean generate-resources
+```
+
 ## Example API calls
 
 Create customer:

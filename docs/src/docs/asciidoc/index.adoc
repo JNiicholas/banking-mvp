@@ -1,0 +1,81 @@
+= Project Documentation
+Jonas Iqbal <jonas@example.com>
+:toc: left
+:sectnums:
+:icons: font
+:revnumber: {revnumber}
+:revdate: {revdate}
+
+== Introduction
+This documentation covers the architecture and key components of the Spring Boot application.
+
+image::images/logo.png[width=120,align=left]
+
+== How to Run Locally
+
+[source,bash]
+----
+./mvnw spring-boot:run
+----
+
+== API Documentation
+
+*API Docs:* link:http://localhost:8080/swagger-ui.html[Swagger UI]
+
+OpenAPI spec (JSON): link:http://localhost:8080/v3/api-docs[ /v3/api-docs ]
+
+== Architecture
+
+The following diagram shows the high-level components:
+
+[plantuml, target=architecture, format=svg]
+----
+@startuml
+title High-Level Architecture
+
+actor User
+rectangle "Frontend (Angular/Nuxt)" as FE
+node "Spring Boot" as SB {
+  [Controller] --> [Service]
+  [Service] --> [Repository]
+}
+database "PostgreSQL" as DB
+
+User --> FE
+FE --> SB
+[Repository] --> DB
+@enduml
+----
+
+== Login Flow (Sequence)
+
+[plantuml, target=login-seq, format=svg]
+----
+@startuml
+autonumber
+actor User
+participant "Frontend" as FE
+participant "Backend" as BE
+database "DB" as DB
+
+User -> FE: Click "Login"
+FE -> BE: POST /api/login {credentials}
+BE -> DB: Validate user
+DB --> BE: OK / Not Found
+BE --> FE: 200 OK + JWT (or 401)
+@enduml
+----
+
+== Configuration
+You can externalize configuration via `application.yml`:
+
+[source,yaml]
+----
+server:
+  port: 8081
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/app
+    username: app
+    password: secret
+----
