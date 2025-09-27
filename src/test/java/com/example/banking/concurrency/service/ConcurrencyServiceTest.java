@@ -48,6 +48,8 @@ class ConcurrencyServiceTest {
 
     private UUID accountId;
     private UUID customerId;
+    private UUID callerExternalId;
+    private String callerRealm;
     private static final Logger log = LoggerFactory.getLogger(ConcurrencyServiceTest.class);
     private String runId;
 
@@ -57,11 +59,15 @@ class ConcurrencyServiceTest {
         runId = UUID.randomUUID().toString().substring(0, 8);
         log.info("[{}] setUp: creating customer and account", runId);
         // Create a customer
+        callerExternalId = UUID.randomUUID();
+        callerRealm = "BankingApp";
         var customer = customerRepository.save(
                 CustomerEntity.builder()
                         .firstName("Concurrency")
                         .lastName("Test")
                         .email("concurrency+" + UUID.randomUUID() + "@test.local")
+                        .externalAuthId(callerExternalId)
+                        .externalAuthRealm(callerRealm)
                         .build());
         customerId = customer.getId();
 
@@ -120,7 +126,7 @@ class ConcurrencyServiceTest {
 
         runConcurrently(2, () -> {
             try {
-                accountService.deposit(accountId, delta);
+                accountService.deposit(accountId, delta, callerExternalId, callerRealm);
                 successes.incrementAndGet();
             } catch (OptimisticLockingFailureException e) {
                 conflicts.incrementAndGet();
@@ -135,7 +141,7 @@ class ConcurrencyServiceTest {
         assertTrue(others.isEmpty(), "Unexpected exceptions: " + others);
 
         // Final balance must equal the sum of successful deltas (2 * 100.00 = 200.0000)
-        BigDecimal balance = accountService.getBalance(accountId);
+        BigDecimal balance = accountService.getBalance(accountId, callerExternalId, callerRealm);
         assertEquals(0, balance.compareTo(new BigDecimal("200.0000")),
                 "Final balance must reflect both successful writes under locking");
 
@@ -156,7 +162,7 @@ class ConcurrencyServiceTest {
 
         runConcurrently(threads, () -> {
             try {
-                accountService.deposit(accountId, delta);
+                accountService.deposit(accountId, delta, callerExternalId, callerRealm);
                 successes.incrementAndGet();
             } catch (OptimisticLockingFailureException e) {
                 // expected under contention
@@ -168,7 +174,7 @@ class ConcurrencyServiceTest {
         assertTrue(failures.isEmpty(), "Unexpected failures: " + failures);
         BigDecimal expected = delta.multiply(BigDecimal.valueOf(successes.get()))
                 .setScale(4); // match your DB scale
-        BigDecimal actual = accountService.getBalance(accountId);
+        BigDecimal actual = accountService.getBalance(accountId, callerExternalId, callerRealm);
         assertEquals(0, expected.compareTo(actual),
                 "Final balance must equal sum of successful deposits");
 
@@ -181,7 +187,7 @@ class ConcurrencyServiceTest {
     void concurrentWithdrawals_withInsufficientAfterFirst() {
         // Seed: deposit 100.00 first (single-thread)
         log.info("[{}] Seeding balance with 100.00 for account {}", runId, accountId);
-        accountService.deposit(accountId, new BigDecimal("100.00"));
+        accountService.deposit(accountId, new BigDecimal("100.00"), callerExternalId, callerRealm);
 
         AtomicInteger success = new AtomicInteger();
         AtomicInteger businessFail = new AtomicInteger();
@@ -189,7 +195,7 @@ class ConcurrencyServiceTest {
 
         Runnable withdraw100 = () -> {
             try {
-                accountService.withdraw(accountId, new BigDecimal("100.00"));
+                accountService.withdraw(accountId, new BigDecimal("100.00"), callerExternalId, callerRealm);
                 success.incrementAndGet();
             } catch (BadRequestException e) {
                 // “insufficient funds” (business rule)
@@ -212,7 +218,7 @@ class ConcurrencyServiceTest {
         log.info("[{}] withdraw results: success={}, businessFail={}, conflicts={}", runId, success.get(), businessFail.get(), conflicts.get());
 
         // Final balance is either 0.0000 (if second failed business) or 0.0000 (conflict still yields one success)
-        BigDecimal actual = accountService.getBalance(accountId);
+        BigDecimal actual = accountService.getBalance(accountId, callerExternalId, callerRealm);
         assertEquals(0, actual.compareTo(new BigDecimal("0.0000")));
         log.info("[{}] Final balance after concurrent withdrawals: {}", runId, actual);
     }
@@ -222,7 +228,7 @@ class ConcurrencyServiceTest {
     void concurrentWithdrawals_overdraft_noNegativeBalance() throws InterruptedException {
         // Seed the account with a known balance of 100.00
         log.info("[{}] Seeding balance with 100.00 for account {}", runId, accountId);
-        accountService.deposit(accountId, new BigDecimal("100.00"));
+        accountService.deposit(accountId, new BigDecimal("100.00"), callerExternalId, callerRealm);
 
         int threads = 8; // many concurrent attempts
         AtomicInteger success = new AtomicInteger();
@@ -232,7 +238,7 @@ class ConcurrencyServiceTest {
 
         Runnable withdraw100 = () -> {
             try {
-                accountService.withdraw(accountId, new BigDecimal("100.00"));
+                accountService.withdraw(accountId, new BigDecimal("100.00"), callerExternalId, callerRealm);
                 success.incrementAndGet();
             } catch (BadRequestException e) {
                 log.info("[{}] overdraft blocked: {}", runId, e.getMessage());
@@ -253,7 +259,7 @@ class ConcurrencyServiceTest {
         assertTrue(others.isEmpty(), "Unexpected exceptions: " + others);
 
         // Final balance must never be negative; with one success it must be 0.0000
-        BigDecimal finalBalance = accountService.getBalance(accountId);
+        BigDecimal finalBalance = accountService.getBalance(accountId, callerExternalId, callerRealm);
         log.info("[{}] Final balance after overdraft concurrency test: {}", runId, finalBalance);
         assertEquals(0, finalBalance.compareTo(new BigDecimal("0.0000")), "Final balance must be 0.0000 (no negative balances)");
     }

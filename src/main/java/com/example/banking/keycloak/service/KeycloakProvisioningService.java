@@ -19,6 +19,7 @@ import reactor.core.publisher.Mono;
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -112,6 +113,10 @@ public class KeycloakProvisioningService {
             String userId = extractUserIdFromLocation(location)
                     .orElseThrow(() -> new IllegalStateException("Could not parse userId from Location: " + location));
             log.info("Created Keycloak user id={}", userId);
+
+            // Assign default realm role 'user'
+            assignRealmRoleToUser(userId, "user");
+
             return userId;
         } else if (resp.statusCode().value() == 409) {
             log.warn("[KC] Create user returned 409 CONFLICT (user may already exist): username={} email={}", req.username(), req.email());
@@ -143,6 +148,43 @@ public class KeycloakProvisioningService {
                 .toBodilessEntity()
                 .block();
         log.info("[KC] Password set for userId={} temporary={}", userId, temporary);
+    }
+
+    // Helper: fetch a realm role by name
+    private RoleRep getRealmRole(String roleName) {
+        String token = getAdminAccessToken();
+        return kc.get()
+                .uri("/admin/realms/{realm}/roles/{role}", realm, roleName)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .retrieve()
+                .bodyToMono(RoleRep.class)
+                .block();
+    }
+
+    // Helper: assign a realm role to a user
+    private void assignRealmRoleToUser(String userId, String roleName) {
+        RoleRep role = getRealmRole(roleName);
+        if (role == null || role.getId() == null) {
+            throw new IllegalStateException("Realm role not found: " + roleName);
+        }
+        String token = getAdminAccessToken();
+        kc.post()
+                .uri("/admin/realms/{realm}/users/{id}/role-mappings/realm", realm, userId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .bodyValue(List.of(role))
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+        log.info("[KC] Assigned realm role '{}' to userId={}", roleName, userId);
+    }
+
+    // Minimal Role representation
+    private static final class RoleRep {
+        private String id;
+        private String name;
+        public String getId() { return id; }
+        public String getName() { return name; }
     }
 
     private Optional<String> extractUserIdFromLocation(String location) {

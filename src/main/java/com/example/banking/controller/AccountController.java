@@ -22,6 +22,7 @@ import io.swagger.v3.oas.annotations.Operation;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/accounts")
@@ -32,49 +33,65 @@ public class AccountController {
     private final AccountMapper accountMapper;
     private final TransactionMapper transactionMapper;
 
-    //moved to CustomerAcontroller because of admin privelidge
-    /*
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Create a new account", description = "Creates a new account for an existing customer")
-    public AccountResponse create(@RequestBody @Valid CreateAccountRequest req, @AuthenticationPrincipal Jwt jwt) {
-        Account account = accountService.createAccount(req);
-        return accountMapper.toResponse(account);
-    }*/
-
+    @PreAuthorize("hasRole('USER')")
     @PostMapping("/{id}/deposit")
     @Operation(summary = "Deposit money", description = "Deposits a given amount into the account and returns updated balance")
     public AccountResponse deposit(@PathVariable("id") UUID id, @RequestBody @Valid AmountRequest req, @AuthenticationPrincipal Jwt jwt) {
-        Account deposit = accountService.deposit(id, req.amount());
+        Account deposit = accountService.deposit(
+                id, req.amount(), callerExternalId(jwt), callerRealm(jwt)
+        );
         return accountMapper.toResponse(deposit);
     }
 
+    @PreAuthorize("hasRole('USER')")
     @PostMapping("/{id}/withdraw")
     @Operation(summary = "Withdraw money", description = "Withdraws a given amount from the account if sufficient funds exist")
     public AccountResponse withdraw(@PathVariable("id") UUID id, @RequestBody @Valid AmountRequest req, @AuthenticationPrincipal Jwt jwt) {
-        Account withdraw = accountService.withdraw(id, req.amount());
+        Account withdraw = accountService.withdraw(
+                id, req.amount(), callerExternalId(jwt), callerRealm(jwt)
+        );
         return accountMapper.toResponse(withdraw);
     }
 
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/{id}")
     @Operation(summary = "Get account by id", description = "Fetches an account by its identifier")
     public AccountResponse getById(@PathVariable("id") UUID id, @AuthenticationPrincipal Jwt jwt) {
-        Account account = accountService.getAccount(id);
+        Account account = accountService.getAccount(
+                id, callerExternalId(jwt), callerRealm(jwt)
+        );
         return accountMapper.toResponse(account);
     }
 
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/{id}/balance")
     @Operation(summary = "Get account balance", description = "Fetches the current balance of the account")
     public BigDecimal balance(@PathVariable("id") UUID id, @AuthenticationPrincipal Jwt jwt) {
-        return accountService.getBalance(id);
+        return accountService.getBalance(
+                id, callerExternalId(jwt), callerRealm(jwt)
+        );
     }
 
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/{id}/transactions")
     @Operation(summary = "List recent transactions", description = "Returns the last N transactions of the account (default 10)")
     public List<TransactionResponse> lastTransactions(@PathVariable("id") UUID id,
                                                       @RequestParam(name="limit", defaultValue="10") int limit,
                                                       @AuthenticationPrincipal Jwt jwt) {
-        List<Transaction> txs = accountService.getLastTransactions(id, limit);
+        List<Transaction> txs = accountService.getLastTransactions(
+                id, limit, callerExternalId(jwt), callerRealm(jwt)
+        );
         return txs.stream().map(transactionMapper::toResponse).collect(Collectors.toList());
+    }
+
+    private UUID callerExternalId(Jwt jwt) {
+        return UUID.fromString(jwt.getSubject());
+    }
+
+    private String callerRealm(Jwt jwt) {
+        String iss = jwt.getIssuer() != null ? jwt.getIssuer().toString() : null;
+        if (iss == null) return null;
+        int i = iss.lastIndexOf("/realms/");
+        return (i >= 0) ? iss.substring(i + 8) : iss;
     }
 }

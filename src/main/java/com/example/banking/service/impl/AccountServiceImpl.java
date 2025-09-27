@@ -55,25 +55,29 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public Account getAccount(UUID id) {
-        return accountRepository.findById(id)
-                .map(accountEntityMapper::toDomain)
+    public Account getAccount(UUID id, UUID callerExternalId, String callerRealm) {
+        UUID callerCustomerId = resolveCallerCustomerId(callerExternalId, callerRealm);
+        AccountEntity entity = accountRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Account not found: " + id));
+        if (!entity.getCustomerId().equals(callerCustomerId)) {
+            // Hide existence to avoid information leakage
+            throw new NotFoundException("Account not found: " + id);
+        }
+        return accountEntityMapper.toDomain(entity);
     }
 
-    private Account getAccountForUpdate(UUID id) {
-        return accountRepository.findByIdForUpdate(id)
-                .map(accountEntityMapper::toDomain)
-                .orElseThrow(() -> new NotFoundException("Account not found: " + id));
-    }
 
     @Override
     @Transactional
-    public Account deposit(UUID accountId, BigDecimal amount) {
+    public Account deposit(UUID accountId, BigDecimal amount, UUID callerExternalId, String callerRealm) {
         validateAmount(amount);
+        UUID callerCustomerId = resolveCallerCustomerId(callerExternalId, callerRealm);
 
         AccountEntity entity = accountRepository.findByIdForUpdate(accountId)
                 .orElseThrow(() -> new NotFoundException("Account not found: " + accountId));
+        if (!entity.getCustomerId().equals(callerCustomerId)) {
+            throw new NotFoundException("Account not found: " + accountId);
+        }
 
         BigDecimal newBal = entity.getBalance().add(amount);
         entity.setBalance(newBal);
@@ -87,11 +91,15 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
-    public Account withdraw(UUID accountId, BigDecimal amount) {
+    public Account withdraw(UUID accountId, BigDecimal amount, UUID callerExternalId, String callerRealm) {
         validateAmount(amount);
+        UUID callerCustomerId = resolveCallerCustomerId(callerExternalId, callerRealm);
 
         AccountEntity entity = accountRepository.findByIdForUpdate(accountId)
                 .orElseThrow(() -> new NotFoundException("Account not found: " + accountId));
+        if (!entity.getCustomerId().equals(callerCustomerId)) {
+            throw new NotFoundException("Account not found: " + accountId);
+        }
 
         if (entity.getBalance().compareTo(amount) < 0) {
             throw new BadRequestException("Insufficient funds");
@@ -108,12 +116,14 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public BigDecimal getBalance(UUID accountId) {
-        return getAccount(accountId).getBalance();
+    public BigDecimal getBalance(UUID accountId, UUID callerExternalId, String callerRealm) {
+        return getAccount(accountId, callerExternalId, callerRealm).getBalance();
     }
 
     @Override
-    public List<Transaction> getLastTransactions(UUID accountId, int limit) {
+    public List<Transaction> getLastTransactions(UUID accountId, int limit, UUID callerExternalId, String callerRealm) {
+        // Ensure ownership first (and existence)
+        getAccount(accountId, callerExternalId, callerRealm);
         int n = Math.max(1, limit);
         var page = PageRequest.of(0, n);
         return transactionRepository.findRecentByAccountId(accountId, page)
@@ -126,5 +136,15 @@ public class AccountServiceImpl implements AccountService {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BadRequestException("Amount must be positive");
         }
+    }
+
+    private UUID resolveCallerCustomerId(UUID externalAuthId, String realm) {
+        if (externalAuthId == null || realm == null) {
+            throw new BadRequestException("Missing caller identity");
+        }
+        return customerRepository.findByExternalAuthIdAndExternalAuthRealm(externalAuthId, realm)
+                .map(customerEntityMapper::toDomain)
+                .map(Customer::getId)
+                .orElseThrow(() -> new NotFoundException("Customer for caller not found"));
     }
 }

@@ -103,13 +103,28 @@ class AccountServiceImplTest {
     @Test
     void getAccount_ok() {
         UUID id = UUID.randomUUID(), customerId = UUID.randomUUID();
+        UUID callerExternalId = UUID.randomUUID();
+        String callerRealm = "BankingApp";
+        var callerCustomerEntity = CustomerEntity.builder()
+                .id(customerId)
+                .firstName("Caller")
+                .lastName("Owner")
+                .email("owner@test.local")
+                .externalAuthId(callerExternalId)
+                .externalAuthRealm(callerRealm)
+                .build();
+        given(customerRepository.findByExternalAuthIdAndExternalAuthRealm(eq(callerExternalId), eq(callerRealm)))
+                .willReturn(Optional.of(callerCustomerEntity));
+        given(customerEntityMapper.toDomain(callerCustomerEntity)).willReturn(Customer.builder()
+                .id(customerId).firstName("Caller").lastName("Owner").email("owner@test.local").build());
+
         var entity = AccountEntityBuilder(id, customerId, bd("100.0000"));
         var domain = Account.builder().id(id).customerId(customerId).balance(bd("100.0000")).build();
 
         given(accountRepository.findById(id)).willReturn(Optional.of(entity));
         given(accountEntityMapper.toDomain(entity)).willReturn(domain);
 
-        var a = accountService.getAccount(id);
+        var a = accountService.getAccount(id, callerExternalId, callerRealm);
 
         assertEquals(id, a.getId());
         assertEquals(0, a.getBalance().compareTo(bd("100.0000")));
@@ -117,14 +132,31 @@ class AccountServiceImplTest {
 
     @Test
     void getAccount_notFound() {
+        UUID callerExternalId = UUID.randomUUID();
+        String callerRealm = "BankingApp";
+        UUID customerId = UUID.randomUUID();
+        var callerCustomerEntity = CustomerEntity.builder().id(customerId).firstName("C").lastName("O")
+                .email("c@test.local").externalAuthId(callerExternalId).externalAuthRealm(callerRealm).build();
+        given(customerRepository.findByExternalAuthIdAndExternalAuthRealm(eq(callerExternalId), eq(callerRealm)))
+                .willReturn(Optional.of(callerCustomerEntity));
+        given(customerEntityMapper.toDomain(callerCustomerEntity)).willReturn(Customer.builder().id(customerId).firstName("C").lastName("O").email("c@test.local").build());
+
         UUID id = UUID.randomUUID();
         given(accountRepository.findById(id)).willReturn(Optional.empty());
-        assertThrows(NotFoundException.class, () -> accountService.getAccount(id));
+        assertThrows(NotFoundException.class, () -> accountService.getAccount(id, callerExternalId, callerRealm));
     }
 
     @Test
     void deposit_ok() {
         UUID id = UUID.randomUUID(), customerId = UUID.randomUUID();
+        UUID callerExternalId = UUID.randomUUID();
+        String callerRealm = "BankingApp";
+        var callerCustomerEntity = CustomerEntity.builder().id(customerId).firstName("C").lastName("O")
+                .email("c@test.local").externalAuthId(callerExternalId).externalAuthRealm(callerRealm).build();
+        given(customerRepository.findByExternalAuthIdAndExternalAuthRealm(eq(callerExternalId), eq(callerRealm)))
+                .willReturn(Optional.of(callerCustomerEntity));
+        given(customerEntityMapper.toDomain(callerCustomerEntity)).willReturn(Customer.builder().id(customerId).firstName("C").lastName("O").email("c@test.local").build());
+
         var entityBefore = AccountEntityBuilder(id, customerId, bd("100.0000"));
         var entityAfter = AccountEntityBuilder(id, customerId, bd("150.0000"));
         var domainAfter = Account.builder().id(id).customerId(customerId).balance(bd("150.0000")).build();
@@ -155,7 +187,7 @@ class AccountServiceImplTest {
                             .build();
                 });
 
-        var out = accountService.deposit(id, bd("50.00"));
+        var out = accountService.deposit(id, bd("50.00"), callerExternalId, callerRealm);
 
         assertEquals(0, out.getBalance().compareTo(bd("150.0000")));
         then(accountRepository).should().findByIdForUpdate(id);
@@ -166,6 +198,14 @@ class AccountServiceImplTest {
     @Test
     void withdraw_ok() {
         UUID id = UUID.randomUUID(), customerId = UUID.randomUUID();
+        UUID callerExternalId = UUID.randomUUID();
+        String callerRealm = "BankingApp";
+        var callerCustomerEntity = CustomerEntity.builder().id(customerId).firstName("C").lastName("O")
+                .email("c@test.local").externalAuthId(callerExternalId).externalAuthRealm(callerRealm).build();
+        given(customerRepository.findByExternalAuthIdAndExternalAuthRealm(eq(callerExternalId), eq(callerRealm)))
+                .willReturn(Optional.of(callerCustomerEntity));
+        given(customerEntityMapper.toDomain(callerCustomerEntity)).willReturn(Customer.builder().id(customerId).firstName("C").lastName("O").email("c@test.local").build());
+
         var entityBefore = AccountEntityBuilder(id, customerId, bd("100.0000"));
         var entityAfter = AccountEntityBuilder(id, customerId, bd("60.0000"));
         var domainAfter = Account.builder().id(id).customerId(customerId).balance(bd("60.0000")).build();
@@ -196,7 +236,7 @@ class AccountServiceImplTest {
                             .build();
                 });
 
-        var out = accountService.withdraw(id, bd("40.00"));
+        var out = accountService.withdraw(id, bd("40.00"), callerExternalId, callerRealm);
 
         assertEquals(0, out.getBalance().compareTo(bd("60.0000")));
         then(accountRepository).should().findByIdForUpdate(id);
@@ -206,10 +246,18 @@ class AccountServiceImplTest {
     @Test
     void withdraw_insufficientFunds() {
         UUID id = UUID.randomUUID(), customerId = UUID.randomUUID();
+        UUID callerExternalId = UUID.randomUUID();
+        String callerRealm = "BankingApp";
+        var callerCustomerEntity = CustomerEntity.builder().id(customerId).firstName("C").lastName("O")
+                .email("c@test.local").externalAuthId(callerExternalId).externalAuthRealm(callerRealm).build();
+        given(customerRepository.findByExternalAuthIdAndExternalAuthRealm(eq(callerExternalId), eq(callerRealm)))
+                .willReturn(Optional.of(callerCustomerEntity));
+        given(customerEntityMapper.toDomain(callerCustomerEntity)).willReturn(Customer.builder().id(customerId).firstName("C").lastName("O").email("c@test.local").build());
+
         var entity = AccountEntityBuilder(id, customerId, bd("10.00"));
         given(accountRepository.findByIdForUpdate(id)).willReturn(Optional.of(entity));
 
-        assertThrows(BadRequestException.class, () -> accountService.withdraw(id, bd("20.00")));
+        assertThrows(BadRequestException.class, () -> accountService.withdraw(id, bd("20.00"), callerExternalId, callerRealm));
         // should not save account or transaction
         then(accountRepository).should(never()).save(any(AccountEntity.class));
         then(transactionRepository).shouldHaveNoInteractions();
@@ -218,6 +266,14 @@ class AccountServiceImplTest {
     @Test
     void getBalance_ok() {
         UUID id = UUID.randomUUID(), customerId = UUID.randomUUID();
+        UUID callerExternalId = UUID.randomUUID();
+        String callerRealm = "BankingApp";
+        var callerCustomerEntity = CustomerEntity.builder().id(customerId).firstName("C").lastName("O")
+                .email("c@test.local").externalAuthId(callerExternalId).externalAuthRealm(callerRealm).build();
+        given(customerRepository.findByExternalAuthIdAndExternalAuthRealm(eq(callerExternalId), eq(callerRealm)))
+                .willReturn(Optional.of(callerCustomerEntity));
+        given(customerEntityMapper.toDomain(callerCustomerEntity)).willReturn(Customer.builder().id(customerId).firstName("C").lastName("O").email("c@test.local").build());
+
         var entity = AccountEntityBuilder(id, customerId, bd("123.4500"));
         given(accountRepository.findById(any(UUID.class))).willReturn(Optional.of(entity));
         given(accountEntityMapper.toDomain(any(AccountEntity.class)))
@@ -230,13 +286,25 @@ class AccountServiceImplTest {
                             .build();
                 });
 
-        var bal = accountService.getBalance(id);
+        var bal = accountService.getBalance(id, callerExternalId, callerRealm);
         assertEquals(0, bal.compareTo(bd("123.4500")));
     }
 
     @Test
     void getLastTransactions_ok() {
         UUID accountId = UUID.randomUUID();
+        UUID callerExternalId = UUID.randomUUID();
+        String callerRealm = "BankingApp";
+        UUID customerId = UUID.randomUUID();
+        var callerCustomerEntity = CustomerEntity.builder().id(customerId).firstName("C").lastName("O")
+                .email("c@test.local").externalAuthId(callerExternalId).externalAuthRealm(callerRealm).build();
+        given(customerRepository.findByExternalAuthIdAndExternalAuthRealm(eq(callerExternalId), eq(callerRealm)))
+                .willReturn(Optional.of(callerCustomerEntity));
+        given(customerEntityMapper.toDomain(callerCustomerEntity)).willReturn(Customer.builder().id(customerId).firstName("C").lastName("O").email("c@test.local").build());
+
+        var ownerAccount = AccountEntityBuilder(accountId, customerId, bd("0.0000"));
+        given(accountRepository.findById(eq(accountId))).willReturn(Optional.of(ownerAccount));
+
         var e1 = TransactionEntity.builder()
                 .id(UUID.randomUUID()).accountId(accountId).timestamp(Instant.parse("2025-01-01T00:00:00Z"))
                 .type(TransactionEntity.Type.DEPOSIT).amount(bd("10.00")).balanceAfter(bd("10.0000")).build();
@@ -254,7 +322,7 @@ class AccountServiceImplTest {
         given(transactionEntityMapper.toDomain(e1)).willReturn(d1);
         given(transactionEntityMapper.toDomain(e2)).willReturn(d2);
 
-        var out = accountService.getLastTransactions(accountId, 10);
+        var out = accountService.getLastTransactions(accountId, 10, callerExternalId, callerRealm);
         assertEquals(2, out.size());
         assertEquals(d1.getId(), out.get(0).getId());
         assertEquals(d2.getId(), out.get(1).getId());

@@ -62,14 +62,18 @@ class BankingMvpApplicationTests {
         CreateAccountRequest ar = new CreateAccountRequest(c.getId());
         Account a = accountService.createAccount(ar);
 
+        // caller identity for new AccountService methods
+        UUID callerExternalId = c.getExternalAuthId();
+        String callerRealm = "BankingApp";
+
         // deposit 100
-        accountService.deposit(a.getId(), new BigDecimal("100.00"));
-        assertEquals(0, accountService.getBalance(a.getId())
+        accountService.deposit(a.getId(), new BigDecimal("100.00"), callerExternalId, callerRealm);
+        assertEquals(0, accountService.getBalance(a.getId(), callerExternalId, callerRealm)
                 .compareTo(new BigDecimal("100.00")));
 
         // withdraw 50
-        accountService.withdraw(a.getId(), new BigDecimal("50.00"));
-        assertEquals(0, accountService.getBalance(a.getId())
+        accountService.withdraw(a.getId(), new BigDecimal("50.00"), callerExternalId, callerRealm);
+        assertEquals(0, accountService.getBalance(a.getId(), callerExternalId, callerRealm)
                 .compareTo(new BigDecimal("50.00")));
     }
 }
