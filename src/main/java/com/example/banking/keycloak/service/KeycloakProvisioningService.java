@@ -87,7 +87,7 @@ public class KeycloakProvisioningService {
      * Create a user; returns the Keycloak userId from the Location header.
      */
     public String createUser(CreateUserRequest req) {
-        log.info("[KC] Creating Keycloak user: username={} email={} enabled={}", req.getUsername(), req.getEmail(), req.isEnabled());
+        log.info("[KC] Creating Keycloak user: username={} email={} enabled={}", req.username(), req.email(), req.enabled());
         String token = getAdminAccessToken();
 
         ClientResponse resp = kc.post()
@@ -114,7 +114,7 @@ public class KeycloakProvisioningService {
             log.info("Created Keycloak user id={}", userId);
             return userId;
         } else if (resp.statusCode().value() == 409) {
-            log.warn("[KC] Create user returned 409 CONFLICT (user may already exist): username={} email={}", req.getUsername(), req.getEmail());
+            log.warn("[KC] Create user returned 409 CONFLICT (user may already exist): username={} email={}", req.username(), req.email());
             throw new IllegalStateException("User already exists (409). Consider searching by email and linking.");
         } else {
             String body = resp.bodyToMono(String.class).block();

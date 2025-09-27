@@ -30,27 +30,19 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public Customer createCustomer(CreateCustomerRequest req) {
-        // Derive first/last from the provided name (best-effort)
-        String firstName = req.name();
-        String lastName = "";
-        if (firstName != null) {
-            String[] parts = firstName.trim().split("\\s+", 2);
-            firstName = parts[0];
-            if (parts.length > 1) {
-                lastName = parts[1];
-            }
-        }
+        // Build Keycloak user request from customer input
+        NameParts np = splitName(req.name());
+        var kcReq = CreateUserRequest.builder()
+                .username(req.email())
+                .email(req.email())
+                .firstName(np.first())
+                .lastName(np.last())
+                .enabled(true)
+                .build();
 
-        // 1) Create user in Keycloak (admin flow) and obtain the KC userId (JWT `sub`)
-        var kcReq = new CreateUserRequest();
-        kcReq.setUsername(req.email());
-        kcReq.setEmail(req.email());
-        kcReq.setFirstName(firstName);
-        kcReq.setLastName(lastName);
-        kcReq.setEnabled(true);
-
+        //Create the user in keycloak
         String keycloakUserId = keycloakProvisioningService.createUser(kcReq);
-        // Showcase: set a simple initial password (not for production)
+        // Showcase: set a simple initial password for the user (not for production)
         keycloakProvisioningService.setUserPassword(keycloakUserId, "1234", false);
         UUID externalAuthId = UUID.fromString(keycloakUserId);
 
@@ -79,4 +71,15 @@ public class CustomerServiceImpl implements CustomerService {
                 .map(customerEntityMapper::toDomain)
                 .toList();
     }
+    private static NameParts splitName(String fullName) {
+        if (fullName == null || fullName.isBlank()) {
+            return new NameParts("", "");
+        }
+        String[] parts = fullName.trim().split("\\s+", 2);
+        String first = parts[0];
+        String last = parts.length > 1 ? parts[1] : "";
+        return new NameParts(first, last);
+    }
+
+    private record NameParts(String first, String last) {}
 }
