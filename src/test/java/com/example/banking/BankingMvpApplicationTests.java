@@ -1,5 +1,8 @@
 package com.example.banking;
 
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import com.example.banking.keycloak.service.KeycloakProvisioningService;
+
 import com.example.banking.dto.CreateAccountRequest;
 import com.example.banking.dto.CreateCustomerRequest;
 import com.example.banking.model.Account;
@@ -15,7 +18,13 @@ import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+        "keycloak.base-url=http://localhost:8081",
+        "keycloak.realm=BankingApp",
+        "keycloak.admin.client-id=BankingAppBackend",
+        "keycloak.admin.client-secret=test-secret"
+})
+@org.springframework.test.context.ActiveProfiles("test")
 @Transactional
 class BankingMvpApplicationTests {
 
@@ -24,6 +33,9 @@ class BankingMvpApplicationTests {
 
     @Autowired
     private AccountService accountService;
+
+    @MockitoBean
+    private KeycloakProvisioningService keycloakProvisioningService;
 
     @Test
     void depositAndWithdrawFlow() {

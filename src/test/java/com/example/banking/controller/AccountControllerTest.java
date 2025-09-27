@@ -16,7 +16,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.security.test.context.support.WithMockUser;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -30,14 +32,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AccountController.class)
+@WithMockUser(username = "testuser")
 class AccountControllerTest {
 
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper objectMapper;
 
-    @MockBean AccountService accountService;     // use interface
-    @MockBean AccountMapper accountMapper;       // controller uses this to map domain -> DTO
-    @MockBean TransactionMapper transactionMapper;
+    @MockitoBean AccountService accountService;     // use interface
+    @MockitoBean AccountMapper accountMapper;       // controller uses this to map domain -> DTO
+    @MockitoBean TransactionMapper transactionMapper;
 
     @Test
     @DisplayName("POST /accounts -> 201 Created with body (+optional Location)")
@@ -52,7 +55,7 @@ class AccountControllerTest {
         BDDMockito.given(accountService.createAccount(eq(req))).willReturn(domain);
         BDDMockito.given(accountMapper.toResponse(eq(domain))).willReturn(dto);
 
-        mvc.perform(post("/accounts")
+        mvc.perform(post("/accounts").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 // If your controller returns 200 OK instead, change to isOk()
@@ -108,7 +111,7 @@ class AccountControllerTest {
         BDDMockito.given(accountService.deposit(eq(id), eq(req.amount()))).willReturn(updated);
         BDDMockito.given(accountMapper.toResponse(eq(updated))).willReturn(dto);
 
-        mvc.perform(post("/accounts/{id}/deposit", id)
+        mvc.perform(post("/accounts/{id}/deposit", id).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -129,7 +132,7 @@ class AccountControllerTest {
         BDDMockito.given(accountService.withdraw(eq(id), eq(req.amount()))).willReturn(updated);
         BDDMockito.given(accountMapper.toResponse(eq(updated))).willReturn(dto);
 
-        mvc.perform(post("/accounts/{id}/withdraw", id)
+        mvc.perform(post("/accounts/{id}/withdraw", id).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())

@@ -47,3 +47,13 @@ springdoc:
       client-id: Banking-App
       use-pkce-with-authorization-code-grant: true
     oauth2-redirect-url: http://localhost:8080/swagger-ui/oauth2-redirect.html
+
+keycloak:
+  base-url: http://localhost:8081
+  realm: BankingApp
+  admin:
+    client-id: BankingAppBackend
+    client-secret: ${KEYCLOAK_BACKEND_CLIENT_SECRET}   # supply via env/secret
+  timeouts:
+    connect-ms: 3000
+    read-ms: 5000

@@ -11,9 +11,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+
+import org.springframework.security.test.context.support.WithMockUser;
 
 import java.util.List;
 import java.util.UUID;
@@ -23,16 +25,20 @@ import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
 @WebMvcTest(CustomerController.class)
+@WithMockUser(username = "testuser")
 class CustomerControllerTest {
 
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     CustomerService customerService;   // use interface, not impl
-    @MockBean CustomerMapper customerMapper;     // controller depends on mapper for DTO mapping
+
+    @MockitoBean
+    CustomerMapper customerMapper;     // controller depends on mapper for DTO mapping
 
     @Test
     @DisplayName("POST /customers -> 201 with body & (optional) Location header")
@@ -40,14 +46,19 @@ class CustomerControllerTest {
         // arrange
         var id = UUID.randomUUID();
         var req = new CreateCustomerRequest("Jonas Iqbal", "jonas@iqbal.dk");
-        var domain = new Customer(id, "Jonas Iqbal", "jonas@iqbal.dk");
-        var dto = new CustomerResponse(id, "Jonas Iqbal", "jonas@iqbal.dk");
+        var domain = new Customer();
+        domain.setId(id);
+        domain.setName("Jonas Iqbal");
+        domain.setEmail("jonas@iqbal.dk");
+        domain.setExternalAuthId(null);
+        domain.setExternalAuthRealm(null);
+        var dto = new CustomerResponse(id, "Jonas Iqbal", "jonas@iqbal.dk", null, null);
 
         given(customerService.createCustomer(eq(req))).willReturn(domain);
         given(customerMapper.toResponse(eq(domain))).willReturn(dto);
 
         // act + assert
-        mvc.perform(post("/customers")
+        mvc.perform(post("/customers").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 // Adjust status depending on your controller:
@@ -68,7 +79,7 @@ class CustomerControllerTest {
         // name is blank, email is invalid
         var badReq = new CreateCustomerRequest(" ", "not-an-email");
 
-        mvc.perform(post("/customers")
+        mvc.perform(post("/customers").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(badReq)))
                 .andExpect(status().isBadRequest());
@@ -80,8 +91,13 @@ class CustomerControllerTest {
     @DisplayName("GET /customers/{id} -> 200")
     void getCustomer_found() throws Exception {
         var id = UUID.randomUUID();
-        var domain = new Customer(id, "Alice", "alice@example.com");
-        var dto = new CustomerResponse(id, "Alice", "alice@example.com");
+        var domain = new Customer();
+        domain.setId(id);
+        domain.setName("Alice");
+        domain.setEmail("alice@example.com");
+        domain.setExternalAuthId(null);
+        domain.setExternalAuthRealm(null);
+        var dto = new CustomerResponse(id, "Alice", "alice@example.com", null, null);
 
         given(customerService.getCustomer(eq(id))).willReturn(domain);
         given(customerMapper.toResponse(eq(domain))).willReturn(dto);
@@ -111,10 +127,22 @@ class CustomerControllerTest {
     void listCustomers_ok() throws Exception {
         var id1 = UUID.randomUUID();
         var id2 = UUID.randomUUID();
-        var c1 = new Customer(id1, "Alice", "alice@example.com");
-        var c2 = new Customer(id2, "Bob", "bob@example.com");
-        var d1 = new CustomerResponse(id1, "Alice", "alice@example.com");
-        var d2 = new CustomerResponse(id2, "Bob", "bob@example.com");
+        var c1 = new Customer();
+        c1.setId(id1);
+        c1.setName("Alice");
+        c1.setEmail("alice@example.com");
+        c1.setExternalAuthId(null);
+        c1.setExternalAuthRealm(null);
+
+        var c2 = new Customer();
+        c2.setId(id2);
+        c2.setName("Bob");
+        c2.setEmail("bob@example.com");
+        c2.setExternalAuthId(null);
+        c2.setExternalAuthRealm(null);
+
+        var d1 = new CustomerResponse(id1, "Alice", "alice@example.com", null, null);
+        var d2 = new CustomerResponse(id2, "Bob", "bob@example.com", null, null);
 
         given(customerService.getAllCustomers()).willReturn(List.of(c1, c2));
         given(customerMapper.toResponse(eq(c1))).willReturn(d1);

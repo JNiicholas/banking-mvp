@@ -25,4 +25,12 @@ public class CustomerEntity {
 
     @Column(nullable = false, length = 255)
     private String email;
+
+    // Keycloak linkage (Option A): store the KC userId (JWT `sub`) and optional realm
+    // Note: Uniqueness & partial index are enforced via Flyway migration (DB-level)
+    @Column(name = "external_auth_id")
+    private UUID externalAuthId; // nullable by design
+
+    @Column(name = "external_auth_realm", length = 64)
+    private String externalAuthRealm; // nullable; useful if multiple realms are used
 }

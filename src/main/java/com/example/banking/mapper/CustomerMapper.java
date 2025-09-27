@@ -16,10 +16,14 @@ public interface CustomerMapper {
     @Mapping(target = "id", source = "id")
     @Mapping(target = "name", source = "name")
     @Mapping(target = "email", source = "email")
-    CustomerResponse toResponse(Customer customer);
+    @Mapping(target = "externalAuthId", source = "externalAuthId")
+    @Mapping(target = "externalAuthRealm", source = "externalAuthRealm")
+    CustomerResponse toResponse(Customer domain);
 
     @Mapping(target = "id", source = "id")
     @Mapping(target = "name", source = "name")
     @Mapping(target = "email", source = "email")
+    @Mapping(target = "externalAuthId", source = "externalAuthId")
+    @Mapping(target = "externalAuthRealm", source = "externalAuthRealm")
     Customer toDomain(CustomerEntity entity);
 }

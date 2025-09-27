@@ -24,9 +24,17 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import com.example.banking.keycloak.service.KeycloakProvisioningService;
 
-
-@SpringBootTest
+@SpringBootTest(properties = {
+        "keycloak.base-url=http://localhost:8081",
+        "keycloak.realm=BankingApp",
+        "keycloak.admin.client-id=BankingAppBackend",
+        "keycloak.admin.client-secret=test-secret"
+})
+@ActiveProfiles("test")
 class ConcurrencyServiceTest {
 
 
@@ -34,6 +42,9 @@ class ConcurrencyServiceTest {
     @Autowired private CustomerRepository customerRepository;
     @Autowired private AccountRepository accountRepository;
     @Autowired private TransactionRepository transactionRepository;
+
+    @MockitoBean
+    private KeycloakProvisioningService keycloakProvisioningService;
 
     private UUID accountId;
     private UUID customerId;
