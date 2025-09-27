@@ -15,8 +15,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest(properties = {
         "keycloak.base-url=http://localhost:8081",
@@ -40,8 +44,19 @@ class BankingMvpApplicationTests {
     @Test
     void depositAndWithdrawFlow() {
         // create customer
-        CreateCustomerRequest cr = new CreateCustomerRequest("Alice", "alice@example.com");
+        CreateCustomerRequest cr = CreateCustomerRequest.builder()
+                .firstName("Alice")
+                .lastName("Smith")
+                .email("alice@example.com")
+                .build();
+
+        String kcUserId = UUID.randomUUID().toString();
+        when(keycloakProvisioningService.createUser(any())).thenReturn(kcUserId);
+        doNothing().when(keycloakProvisioningService).setUserPassword(eq(kcUserId), anyString(), anyBoolean());
+
+
         Customer c = customerService.createCustomer(cr);
+
 
         // create account
         CreateAccountRequest ar = new CreateAccountRequest(c.getId());

@@ -14,7 +14,8 @@ public interface CustomerEntityMapper {
     Customer toDomain(CustomerEntity entity);
 
     @Mapping(target = "id", source = "id")
-    @Mapping(target = "name", source = "name")
+    @Mapping(target = "firstName", source = "firstName")
+    @Mapping(target = "lastName", source = "lastName")
     @Mapping(target = "email", source = "email")
     @Mapping(target = "externalAuthId", source = "externalAuthId")
     @Mapping(target = "externalAuthRealm", source = "externalAuthRealm")

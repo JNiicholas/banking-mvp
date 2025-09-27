@@ -3,6 +3,7 @@ package com.example.banking.service.impl;
 import com.example.banking.dto.CreateCustomerRequest;
 import com.example.banking.entity.CustomerEntity;
 import com.example.banking.exception.NotFoundException;
+import com.example.banking.keycloak.service.KeycloakProvisioningService;
 import com.example.banking.mapper.CustomerEntityMapper;
 import com.example.banking.model.Customer;
 import com.example.banking.repository.CustomerRepository;
@@ -24,24 +25,38 @@ class CustomerServiceImplTest {
 
     @Mock private CustomerRepository customerRepository;
     @Mock private CustomerEntityMapper customerEntityMapper;
+    @Mock private KeycloakProvisioningService keycloakProvisioningService;
 
     @InjectMocks private CustomerServiceImpl customerService; // class under test
 
     @Test
     void createCustomer_ok() {
         // given
-        var req = new CreateCustomerRequest("Jonas Iqbal", "jonas@iqbal.dk");
+        var req = CreateCustomerRequest.builder()
+                .firstName("Jonas")
+                .lastName("Iqbal")
+                .email("jonas@iqbal.dk")
+                .build();
 
         var savedId = UUID.randomUUID();
+
+        var kcUserId = UUID.randomUUID().toString();
+        given(keycloakProvisioningService.createUser(any())).willReturn(kcUserId);
+        willDoNothing().given(keycloakProvisioningService).setUserPassword(eq(kcUserId), anyString(), anyBoolean());
+
         var savedEntity = CustomerEntity.builder()
                 .id(savedId)
-                .name(req.name())
+                .firstName(req.firstName())
+                .lastName(req.lastName())
                 .email(req.email())
+                .externalAuthId(UUID.fromString(kcUserId))
                 .build();
         var domain = Customer.builder()
                 .id(savedId)
-                .name(req.name())
+                .firstName(req.firstName())
+                .lastName(req.lastName())
                 .email(req.email())
+                .externalAuthId(UUID.fromString(kcUserId))
                 .build();
 
         // repo will return a persisted entity (id filled by DB)
@@ -55,12 +70,15 @@ class CustomerServiceImplTest {
         // then
         assertNotNull(result);
         assertEquals(savedId, result.getId());
-        assertEquals("Jonas Iqbal", result.getName());
+        assertEquals("Jonas", result.getFirstName());
+        assertEquals("Iqbal", result.getLastName());
         assertEquals("jonas@iqbal.dk", result.getEmail());
 
         // verify interactions
         then(customerRepository).should(times(1)).save(any(CustomerEntity.class));
         then(customerEntityMapper).should(times(1)).toDomain(savedEntity);
+        then(keycloakProvisioningService).should().createUser(any());
+        then(keycloakProvisioningService).should().setUserPassword(eq(kcUserId), anyString(), anyBoolean());
         then(customerRepository).shouldHaveNoMoreInteractions();
         then(customerEntityMapper).shouldHaveNoMoreInteractions();
     }
@@ -70,9 +88,9 @@ class CustomerServiceImplTest {
         // given
         var id = UUID.randomUUID();
         var entity = CustomerEntity.builder()
-                .id(id).name("Alice").email("alice@example.com").build();
+                .id(id).firstName("Alice").lastName("Smith").email("alice@example.com").build();
         var domain = Customer.builder()
-                .id(id).name("Alice").email("alice@example.com").build();
+                .id(id).firstName("Alice").lastName("Smith").email("alice@example.com").build();
 
         given(customerRepository.findById(id)).willReturn(Optional.of(entity));
         given(customerEntityMapper.toDomain(entity)).willReturn(domain);
@@ -83,7 +101,8 @@ class CustomerServiceImplTest {
         // then
         assertNotNull(result);
         assertEquals(id, result.getId());
-        assertEquals("Alice", result.getName());
+        assertEquals("Alice", result.getFirstName());
+        assertEquals("Smith", result.getLastName());
         assertEquals("alice@example.com", result.getEmail());
 
         then(customerRepository).should().findById(id);
@@ -111,10 +130,10 @@ class CustomerServiceImplTest {
         var id1 = UUID.randomUUID();
         var id2 = UUID.randomUUID();
 
-        var e1 = CustomerEntity.builder().id(id1).name("A").email("a@example.com").build();
-        var e2 = CustomerEntity.builder().id(id2).name("B").email("b@example.com").build();
-        var d1 = Customer.builder().id(id1).name("A").email("a@example.com").build();
-        var d2 = Customer.builder().id(id2).name("B").email("b@example.com").build();
+        var e1 = CustomerEntity.builder().id(id1).firstName("A").lastName("One").email("a@example.com").build();
+        var e2 = CustomerEntity.builder().id(id2).firstName("B").lastName("Two").email("b@example.com").build();
+        var d1 = Customer.builder().id(id1).firstName("A").lastName("One").email("a@example.com").build();
+        var d2 = Customer.builder().id(id2).firstName("B").lastName("Two").email("b@example.com").build();
 
         given(customerRepository.findAll()).willReturn(List.of(e1, e2));
         given(customerEntityMapper.toDomain(e1)).willReturn(d1);

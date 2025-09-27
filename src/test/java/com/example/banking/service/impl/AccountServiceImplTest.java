@@ -52,7 +52,11 @@ class AccountServiceImplTest {
         // customer exists
         given(customerRepository.findById(eq(customerId)))
                 .willReturn(Optional.of(CustomerEntity.builder()
-                        .id(customerId).name("Jonas").email("jonas@iqbal.dk").build()));
+                        .id(customerId)
+                        .firstName("Jonas")
+                        .lastName("Iqbal")
+                        .email("jonas@iqbal.dk")
+                        .build()));
 
 
         given(accountEntityMapper.toNewEntity(any(Account.class)))
@@ -71,7 +75,8 @@ class AccountServiceImplTest {
                     var e = (CustomerEntity) inv.getArgument(0);
                     return Customer.builder()
                             .id(e.getId())
-                            .name(e.getName())
+                            .firstName(e.getFirstName())
+                            .lastName(e.getLastName())
                             .email(e.getEmail())
                             .build();
                 });

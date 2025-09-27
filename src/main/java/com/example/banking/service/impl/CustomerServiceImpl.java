@@ -31,12 +31,11 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public Customer createCustomer(CreateCustomerRequest req) {
         // Build Keycloak user request from customer input
-        NameParts np = splitName(req.name());
         var kcReq = CreateUserRequest.builder()
                 .username(req.email())
                 .email(req.email())
-                .firstName(np.first())
-                .lastName(np.last())
+                .firstName(req.firstName())
+                .lastName(req.lastName())
                 .enabled(true)
                 .build();
 
@@ -48,7 +47,8 @@ public class CustomerServiceImpl implements CustomerService {
 
         // 2) Persist customer linked to Keycloak identity
         var entity = CustomerEntity.builder()
-                .name(req.name())
+                .firstName(req.firstName())
+                .lastName(req.lastName())
                 .email(req.email())
                 .externalAuthId(externalAuthId)
                 .externalAuthRealm(keycloakRealm)
@@ -71,15 +71,4 @@ public class CustomerServiceImpl implements CustomerService {
                 .map(customerEntityMapper::toDomain)
                 .toList();
     }
-    private static NameParts splitName(String fullName) {
-        if (fullName == null || fullName.isBlank()) {
-            return new NameParts("", "");
-        }
-        String[] parts = fullName.trim().split("\\s+", 2);
-        String first = parts[0];
-        String last = parts.length > 1 ? parts[1] : "";
-        return new NameParts(first, last);
-    }
-
-    private record NameParts(String first, String last) {}
 }

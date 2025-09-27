@@ -59,7 +59,8 @@ class ConcurrencyServiceTest {
         // Create a customer
         var customer = customerRepository.save(
                 CustomerEntity.builder()
-                        .name("Concurrency Test")
+                        .firstName("Concurrency")
+                        .lastName("Test")
                         .email("concurrency+" + UUID.randomUUID() + "@test.local")
                         .build());
         customerId = customer.getId();

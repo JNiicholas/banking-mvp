@@ -17,7 +17,8 @@ class CustomerMapperTest {
         UUID id = UUID.randomUUID();
         var domain = Customer.builder()
                 .id(id)
-                .name("Alice")
+                .firstName("Alice")
+                .lastName("Smith")
                 .email("alice@example.com")
                 .build();
 
@@ -25,7 +26,8 @@ class CustomerMapperTest {
 
         assertNotNull(dto);
         assertEquals(id, dto.id());
-        assertEquals("Alice", dto.name());
+        assertEquals("Alice", dto.firstName());
+        assertEquals("Smith", dto.lastName());
         assertEquals("alice@example.com", dto.email());
     }
 
@@ -34,7 +36,8 @@ class CustomerMapperTest {
         UUID id = UUID.randomUUID();
         var entity = CustomerEntity.builder()
                 .id(id)
-                .name("Alice")
+                .firstName("Alice")
+                .lastName("Smith")
                 .email("alice@example.com")
                 .build();
 
@@ -42,7 +45,8 @@ class CustomerMapperTest {
 
         assertNotNull(domain);
         assertEquals(id, domain.getId());
-        assertEquals("Alice", domain.getName());
+        assertEquals("Alice", domain.getFirstName());
+        assertEquals("Smith", domain.getLastName());
         assertEquals("alice@example.com", domain.getEmail());
     }
 }

@@ -14,7 +14,8 @@ import java.util.UUID;
 @Builder
 public class Customer {
     private UUID id;
-    private String name;
+    private String firstName;
+    private String lastName;
     private String email;
 
     // Link to Keycloak user (JWT `sub`) and optional realm
