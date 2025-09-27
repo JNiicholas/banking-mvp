@@ -7,7 +7,7 @@ Jonas Iqbal <jonas@example.com>
 :revdate: {revdate}
 
 == Introduction
-This documentation covers the architecture and key components of the Spring Boot application.
+This documentation covers the architecture and key components of the Spring Boot banking application. The application provides secure and robust banking features including account management, transaction processing, and customer data handling. It leverages Spring Boot's ecosystem for building RESTful services, integrates with a PostgreSQL database, and implements security and concurrency controls to ensure data integrity and user authentication.
 
 :imagesdir: images
 image::logo.png[width=120,align=left]
@@ -47,6 +47,68 @@ FE --> SB
 [Repository] --> DB
 @enduml
 ....
+
+The architecture of the application is layered to promote separation of concerns and maintainability. The Controller layer handles HTTP requests and responses, delegating business logic to the Service layer. Services encapsulate core business rules and transaction management, ensuring atomic operations and consistency. The Repository layer interacts directly with the PostgreSQL database, using JPA/Hibernate for ORM. To maintain data integrity during concurrent operations, the application employs optimistic locking on entities such as Account, using a version field. Transactions are managed declaratively via Spring’s `@Transactional` annotations, ensuring rollback on failures and consistency across multiple operations.
+
+== Database
+
+The application manages three primary entities: Account, Transaction, and Customer. An Account holds balance and version information for optimistic locking and belongs to a Customer. Transactions record individual operations on accounts, including type, amount, resulting balance, and timestamp.
+
+[plantuml, target=db-schema, format=svg]
+....
+@startuml
+entity "Customer" {
+  * id : UUID
+  --
+  name : String
+  email : String
+}
+entity "Account" {
+  * id : UUID
+  --
+  balance : BigDecimal
+  version : int
+  customer_id : UUID
+}
+entity "Transaction" {
+  * id : UUID
+  --
+  type : enum
+  amount : BigDecimal
+  balance_after : BigDecimal
+  timestamp : Instant
+  account_id : UUID
+}
+Customer ||--o{ Account
+Account ||--o{ Transaction
+@enduml
+....
+
+Database schema versioning and migrations are managed using Flyway, which applies incremental SQL scripts to keep the database schema in sync with the application. For development, PostgreSQL is run via docker-compose, ensuring an isolated and reproducible environment for testing and deployment.
+
+== Security
+
+The application secures endpoints using OAuth2 login integrated with Keycloak as the identity provider. Configuration includes specifying the issuer-uri and accepted audiences to validate JWT tokens. This setup enables single sign-on and centralized user management. For testing API security, Postman can be configured to obtain OAuth2 tokens from Keycloak and include them in requests, facilitating end-to-end security verification.
+
+== Logging
+
+A custom `TraceIdFilter` is implemented to inject a unique trace identifier into each request’s logging context. This enables correlation of logs across distributed components and simplifies debugging by tracking the flow of individual requests through the system.
+
+== Mapping
+
+MapStruct is used for mapping between entity objects and Data Transfer Objects (DTOs). This compile-time code generation approach ensures type-safe, efficient, and maintainable mappings, reducing boilerplate code in the service and controller layers.
+
+== Validation
+
+Input validation is enforced on deposit and withdrawal operations to ensure data integrity and business rules compliance. This includes checks for positive amounts, sufficient funds for withdrawals, and adherence to account constraints, preventing invalid or inconsistent transactions.
+
+== Testing
+
+The application includes comprehensive integration tests that cover API endpoints, service logic, and database interactions. Special attention is given to concurrency scenarios to verify that optimistic locking prevents race conditions. Tests also ensure overdraft prevention logic works correctly, maintaining account balances within allowed limits.
+
+== Additional Topics
+
+Additional features include resilience4j integration for fault tolerance, including circuit breakers and retry mechanisms to enhance system robustness. The build process incorporates the OWASP dependency-check plugin to identify and mitigate known vulnerabilities in third-party libraries, improving the application's security posture.
 
 == Login Flow (Sequence)
 
