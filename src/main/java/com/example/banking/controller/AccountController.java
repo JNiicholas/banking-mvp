@@ -32,13 +32,15 @@ public class AccountController {
     private final AccountMapper accountMapper;
     private final TransactionMapper transactionMapper;
 
+    //moved to CustomerAcontroller because of admin privelidge
+    /*
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create a new account", description = "Creates a new account for an existing customer")
     public AccountResponse create(@RequestBody @Valid CreateAccountRequest req, @AuthenticationPrincipal Jwt jwt) {
         Account account = accountService.createAccount(req);
         return accountMapper.toResponse(account);
-    }
+    }*/
 
     @PostMapping("/{id}/deposit")
     @Operation(summary = "Deposit money", description = "Deposits a given amount into the account and returns updated balance")

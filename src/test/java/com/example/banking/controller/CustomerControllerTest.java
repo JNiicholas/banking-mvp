@@ -2,10 +2,15 @@ package com.example.banking.controller;
 
 import com.example.banking.dto.CreateCustomerRequest;
 import com.example.banking.dto.CustomerResponse;
+import com.example.banking.dto.AccountResponse;
+import com.example.banking.dto.CreateAccountRequest;
 import com.example.banking.exception.NotFoundException;
 import com.example.banking.mapper.CustomerMapper;
+import com.example.banking.mapper.AccountMapper;
 import com.example.banking.model.Customer;
+import com.example.banking.model.Account;
 import com.example.banking.service.api.CustomerService;
+import com.example.banking.service.api.AccountService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,6 +24,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 
 import java.util.List;
 import java.util.UUID;
+import java.math.BigDecimal;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -28,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
 @WebMvcTest(CustomerController.class)
-@WithMockUser(username = "testuser")
+@WithMockUser(username = "testuser", roles = "ADMIN")
 class CustomerControllerTest {
 
     @Autowired MockMvc mvc;
@@ -39,6 +45,12 @@ class CustomerControllerTest {
 
     @MockitoBean
     CustomerMapper customerMapper;     // controller depends on mapper for DTO mapping
+
+    @MockitoBean
+    AccountService accountService;
+
+    @MockitoBean
+    AccountMapper accountMapper;
 
     @Test
     @DisplayName("POST /customers -> 201 with body & (optional) Location header")
@@ -173,5 +185,29 @@ class CustomerControllerTest {
                 .andExpect(jsonPath("$[1].firstName").value("Bob"))
                 .andExpect(jsonPath("$[1].lastName").value("Brown"))
                 .andExpect(jsonPath("$[1].email").value("bob@example.com"));
+    }
+    @Test
+    @DisplayName("POST /customers/accounts -> 201 Created with body (+optional Location)")
+    void createAccount_ok() throws Exception {
+        UUID id = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+
+        var req = new CreateAccountRequest(customerId);
+        var domain = Account.builder().id(id).customerId(customerId).balance(new BigDecimal("0.0000")).build();
+        var dto = new AccountResponse(id, customerId, new BigDecimal("0.0000"));
+
+        given(accountService.createAccount(eq(req))).willReturn(domain);
+        given(accountMapper.toResponse(eq(domain))).willReturn(dto);
+
+        mvc.perform(post("/customers/accounts").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(id.toString()))
+                .andExpect(jsonPath("$.customerId").value(customerId.toString()))
+                .andExpect(jsonPath("$.balance").value(0.0));
+        // If your controller sets Location, you can add:
+        // .andExpect(header().string("Location", "/accounts/" + id));
     }
 }

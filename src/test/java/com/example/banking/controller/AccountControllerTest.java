@@ -43,32 +43,6 @@ class AccountControllerTest {
     @MockitoBean TransactionMapper transactionMapper;
 
     @Test
-    @DisplayName("POST /accounts -> 201 Created with body (+optional Location)")
-    void create_ok() throws Exception {
-        UUID id = UUID.randomUUID();
-        UUID customerId = UUID.randomUUID();
-
-        var req = new CreateAccountRequest(customerId);
-        var domain = Account.builder().id(id).customerId(customerId).balance(new BigDecimal("0.0000")).build();
-        var dto = new AccountResponse(id, customerId, new BigDecimal("0.0000"));
-
-        BDDMockito.given(accountService.createAccount(eq(req))).willReturn(domain);
-        BDDMockito.given(accountMapper.toResponse(eq(domain))).willReturn(dto);
-
-        mvc.perform(post("/accounts").with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                // If your controller returns 200 OK instead, change to isOk()
-                .andExpect(status().isCreated())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(id.toString()))
-                .andExpect(jsonPath("$.customerId").value(customerId.toString()))
-                .andExpect(jsonPath("$.balance").value(0.0));
-        // If your controller sets Location, you can add:
-        // .andExpect(header().string("Location", "/accounts/" + id));
-    }
-
-    @Test
     @DisplayName("GET /accounts/{id} -> 200 with AccountResponse")
     void getById_ok() throws Exception {
         UUID id = UUID.randomUUID();

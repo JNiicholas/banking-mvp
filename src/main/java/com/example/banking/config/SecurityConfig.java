@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
@@ -14,11 +15,16 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.oauth2.jwt.*;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 import java.util.List;
 import java.util.Arrays;
+import java.util.Collection;
 
 @Configuration
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
@@ -46,58 +52,33 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers(SWAGGER_WHITELIST).permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/customers/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt
-                                .jwtAuthenticationConverter(keycloakJwtAuthConverter())
+                                .jwtAuthenticationConverter(realmRoleConverter())
                                 .decoder(jwtDecoderWithAudience())
                         )
                 );
         return http.build();
     }
 
-    /** Map Keycloak roles to ROLE_* authorities */
-    private JwtAuthenticationConverter keycloakJwtAuthConverter() {
-        var gac = new JwtGrantedAuthoritiesConverter();
-
-        // 1) Realm roles (realm_access.roles) -> ROLE_*
-        gac.setAuthoritiesClaimName("realm_access.roles");
-        gac.setAuthorityPrefix("ROLE_");
-
-        // If you also use client roles, you can add another converter for
-        // "resource_access.<client-id>.roles". For simplicity we keep realm roles here.
-
-        var converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(jwt -> {
-            // collect both realm and client roles if you want
-            var authorities = gac.convert(jwt);
-
-            // OPTIONAL: add client roles as authorities
-            // Read roles from multiple client IDs, e.g. "Angular-Banking-App,Banking-App"
-            var clientRoles = jwt.getClaimAsMap("resource_access");
-            if (clientRoles != null) {
-                // Read roles from multiple client IDs, e.g. "Angular-Banking-App,Banking-App"
-                Arrays.stream(clientRoleClients == null ? new String[0] : clientRoleClients.split(","))
-                        .map(String::trim)
-                        .filter(s -> !s.isEmpty())
-                        .forEach(clientId -> {
-                            Object entryObj = clientRoles.get(clientId);
-                            if (entryObj instanceof java.util.Map<?, ?> entry) {
-                                Object rolesObj = entry.get("roles");
-                                if (rolesObj instanceof java.util.List<?> list) {
-                                    list.stream()
-                                            .filter(String.class::isInstance)
-                                            .map(String.class::cast)
-                                            .forEach(r -> authorities.add(() -> "ROLE_" + r));
-                                }
-                            }
-                        });
-            }
-
-            return authorities;
-        });
-        return converter;
+    /** Map Keycloak realm roles (realm_access.roles) to ROLE_* authorities */
+    private Converter<Jwt, JwtAuthenticationToken> realmRoleConverter() {
+        return jwt -> {
+            var realmAccess = jwt.getClaimAsMap("realm_access");
+            @SuppressWarnings("unchecked")
+            Collection<String> roles = realmAccess != null
+                    ? (Collection<String>) realmAccess.getOrDefault("roles", List.of())
+                    : List.of();
+            var authorities = roles.stream()
+                    .map(r -> "ROLE_" + r.toUpperCase())
+                    .map(SimpleGrantedAuthority::new)
+                    .toList();
+            return new JwtAuthenticationToken(jwt, authorities);
+        };
     }
 
     /** Enforce that token audience contains our API’s client-id */
