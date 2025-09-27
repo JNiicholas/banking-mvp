@@ -92,7 +92,66 @@ The application secures endpoints using OAuth2 login integrated with Keycloak as
 
 == Logging
 
-A custom `TraceIdFilter` is implemented to inject a unique trace identifier into each request’s logging context. This enables correlation of logs across distributed components and simplifies debugging by tracking the flow of individual requests through the system.
+A custom `TraceIdFilter` and a `JwtLoggingFilter` provide rich, per-request observability.
+
+*Trace ID (request correlation)*::
+We generate a unique **traceId** at the very beginning of the servlet chain and store it in the Mapped Diagnostic Context (MDC). The same value is also written to the response header **`X-Trace-Id`** so clients (Postman, browser, other services) can copy it into bug reports or dashboards and instantly correlate a client call with all backend log lines for that request.
+
+Benefits:
+- End‑to‑end correlation across services and threads (every log line for the request carries the same traceId).
+- Fast production triage: copy the `X-Trace-Id` from a failed response and grep the logs.
+- Works even for 401/403/500 because the traceId is created before authentication/handler execution.
+
+How to use it from clients:
+[source,bash]
+----
+# Make a request and capture the header
+curl -i http://localhost:8080/customers
+
+# Response excerpt:
+HTTP/1.1 200
+X-Trace-Id: 7f1333bbb0a94bfaa345fd98e78c5905
+----
+
+Then search logs with that id:
+[source,bash]
+----
+grep 7f1333bbb0a94bfaa345fd98e78c5905 application.log
+----
+
+Sample lines (abbreviated):
+[source,log]
+----
+INFO TraceIdFilter - Request started: method=GET, uri=/customers, traceId=7f1333bbb0a94bfaa345fd98e78c5905
+INFO TraceIdFilter - Request completed: method=GET, uri=/customers, status=200, traceId=7f1333bbb0a94bfaa345fd98e78c5905
+----
+
+*JWT logging*::
+After Spring Security authenticates the request and populates the `SecurityContext`, a dedicated `JwtLoggingFilter` logs **non-sensitive** JWT claims to help understand *who* made the call:
+- `sub` (subject / user id), `preferred_username`, `email`
+- `iss` (issuer/realm), `aud` (audiences), `azp` (authorized party), scopes/roles
+- The same `traceId` is included so security events correlate with the request.
+
+Example (abbreviated):
+[source,log]
+----
+INFO JwtLoggingFilter - JWT details: sub=..., preferred_username=..., email=..., iss=..., azp=..., aud=[...], scope=..., roles=[...], traceId=7f1333bbb0a94bfaa345fd98e78c5905
+----
+
+We intentionally avoid logging token values themselves or highly sensitive claims.
+
+*Filter ordering &amp; lifecycle*::
+Servlet filters execute in chain order. We register:
+1. **TraceIdFilter** — runs **first** (highest precedence). It creates the traceId, puts it in MDC, and sets `X-Trace-Id`. All later logs inherit the MDC value.
+2. **Spring Security filter chain** — performs authentication/authorization and builds the `SecurityContext`.
+3. **JwtLoggingFilter** — runs **after** security so it can safely read the authenticated `Jwt` (if any) and log selected claims together with the traceId.
+4. Application handlers, then response flows back through the chain.
+
+In Spring Boot this ordering is enforced by either:
+- Annotating filters with `@Order` (lower number = earlier), or
+- Registering with `FilterRegistrationBean#setOrder`. We assign TraceIdFilter a higher precedence (smaller order value) than JwtLoggingFilter, and ensure JwtLoggingFilter executes after the security chain (e.g., `Ordered.LOWEST_PRECEDENCE - 10`).
+
+This setup guarantees that every log line includes a traceId and—when authenticated—helpful, privacy‑aware JWT context.
 
 == Mapping
 
@@ -109,6 +168,67 @@ The application includes comprehensive integration tests that cover API endpoint
 == Additional Topics
 
 Additional features include resilience4j integration for fault tolerance, including circuit breakers and retry mechanisms to enhance system robustness. The build process incorporates the OWASP dependency-check plugin to identify and mitigate known vulnerabilities in third-party libraries, improving the application's security posture.
+
+== Project Lombok
+
+Project Lombok reduces Java boilerplate (getters/setters, constructors, builders, logging) by generating code at **compile time** via annotation processing. Lombok hooks into the Java compiler and modifies the **javac Abstract Syntax Tree (AST)** (often called the *compile tree*). When you annotate a class (e.g., with `@Getter`, `@Setter`, `@Builder`, `@Value`), Lombok injects the corresponding fields/methods into the AST *before* bytecode is written, so the generated members are present in the compiled classes but not in your source files.
+
+Key points:
+- **Annotation processor**: Lombok runs as a compile-time processor that alters the AST. This is why IDEs must enable **annotation processing** and usually need the **Lombok plugin** for correct code insight.
+- **Common annotations**: `@Getter`, `@Setter`, `@ToString`, `@EqualsAndHashCode`, `@RequiredArgsConstructor`, `@AllArgsConstructor`, `@NoArgsConstructor`, `@Builder`, `@Value`, `@Data`, and loggers like `@Slf4j`.
+- **Delombok**: To inspect generated code or for tools that require explicit sources, use *delombok* to materialize the generated members into plain Java sources.
+
+Official resources:
+- Lombok home: https://projectlombok.org
+- Feature overview: https://projectlombok.org/features
+- IDE setup / annotation processing: https://projectlombok.org/setup/overview
+- Delombok: https://projectlombok.org/features/delombok
+
+
+== OWASP Dependency-Check
+
+We use **OWASP Dependency-Check** to identify known CVEs in third-party dependencies. It analyzes project artifacts (Maven, Gradle, etc.), matches them to vulnerability data (NVD/CPE), and produces a report.
+
+How to run with Maven (typical commands):
+
+[source,bash]
+----
+# Run a scan and generate a report
+mvn -U org.owasp:dependency-check-maven:check
+
+# (Optional) Only update the local vulnerability database
+mvn org.owasp:dependency-check-maven:updateonly
+----
+
+Where to find the report:
+
+- HTML report: `target/dependency-check-report.html`
+- JSON/XML variants: `target/dependency-check-report.json` / `target/dependency-check-report.xml`
+
+Useful configuration (in `pom.xml` under the plugin):
+
+[source,xml]
+----
+<configuration>
+  <!-- Fail the build if a vulnerability with CVSS >= 7.0 is found -->
+  <failOnCVSS>7.0</failOnCVSS>
+  <!-- Optionally point to a suppression file for false positives -->
+  <!-- <suppressionFiles> <suppressionFile>dependency-check-suppressions.xml</suppressionFile> </suppressionFiles> -->
+  <!-- Use an NVD API key from environment (see below) -->
+  <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
+</configuration>
+----
+
+Obtaining and using an **NVD API Key** (recommended for reliable, faster database updates):
+
+1. Request a key from NVD: create an account and obtain an API key.
+2. Store it as an environment variable (e.g., `NVD_API_KEY`).
+3. Expose it to the plugin via `<nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>` as shown above.
+
+Official resources:
+- Dependency-Check docs (Maven): https://jeremylong.github.io/DependencyCheck/dependency-check-maven/index.html
+- Project repository: https://github.com/jeremylong/DependencyCheck
+- NVD API key request: https://nvd.nist.gov/developers/request-an-api-key
 
 == Login Flow (Sequence)
 

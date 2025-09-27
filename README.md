@@ -25,6 +25,13 @@ Server starts on :8080.
 mvn clean generate-resources
 ```
 
+## Security (OWASP Dependency-Check)
+OWASP Dependency-Check scans project dependencies for known security vulnerabilities.
+```bash
+mvn org.owasp:dependency-check-maven:check
+```
+An HTML report will be generated at `target/dependency-check-report.html`.
+
 ## Example API calls
 
 Create customer:
