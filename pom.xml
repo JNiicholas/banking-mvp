@@ -124,6 +124,15 @@
               <backend>html5</backend>
               <sourceDirectory>${project.basedir}/docs/src/docs/asciidoc</sourceDirectory>
               <outputDirectory>${project.build.directory}/docs/html</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${project.basedir}/docs/src/docs/asciidoc/images</directory>
+                  <targetPath>images</targetPath>
+                  <includes>
+                    <include>**/*</include>
+                  </includes>
+                </resource>
+              </resources>
               <attributes>
                 <toc>left</toc>
                 <toclevels>3</toclevels>
@@ -148,6 +157,15 @@
               <backend>pdf</backend>
               <sourceDirectory>${project.basedir}/docs/src/docs/asciidoc</sourceDirectory>
               <outputDirectory>${project.build.directory}/docs/pdf</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${project.basedir}/docs/src/docs/asciidoc/images</directory>
+                  <targetPath>images</targetPath>
+                  <includes>
+                    <include>**/*</include>
+                  </includes>
+                </resource>
+              </resources>
               <attributes>
                 <doctype>book</doctype>
                 <sectnums>true</sectnums>
