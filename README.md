@@ -47,6 +47,9 @@ Project Lombok reduces Java boilerplate (getters/setters, constructors, builders
 - Delombok: https://projectlombok.org/features/delombok
 
 ## Security (OWASP Dependency-Check)
+## Keycloak
+
+- **Admin Console:** http://localhost:8081/admin/
 **OWASP Dependency-Check** identifies known CVEs in third‑party dependencies by analyzing project artifacts (Maven, Gradle, etc.) and matching them to NVD/CPE data. It produces an HTML/JSON/XML report.
 
 ### How to run (Maven)

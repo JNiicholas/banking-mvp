@@ -88,7 +88,10 @@ Database schema versioning and migrations are managed using Flyway, which applie
 
 == Security
 
+
 The application secures endpoints using OAuth2 login integrated with Keycloak as the identity provider. Configuration includes specifying the issuer-uri and accepted audiences to validate JWT tokens. This setup enables single sign-on and centralized user management. For testing API security, Postman can be configured to obtain OAuth2 tokens from Keycloak and include them in requests, facilitating end-to-end security verification.
+
+*Keycloak Admin Console:* link:http://localhost:8081/admin/[http://localhost:8081/admin/]
 
 == Logging
 
