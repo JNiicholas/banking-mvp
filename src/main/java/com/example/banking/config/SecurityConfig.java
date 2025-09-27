@@ -29,14 +29,22 @@ public class SecurityConfig {
     @Value("${app.security.client-roles.clients:}")
     String clientRoleClients; // comma-separated list of client IDs to read roles from
 
+    private static final String[] SWAGGER_WHITELIST = {
+            "/v3/api-docs",
+            "/v3/api-docs/**",
+            "/v3/api-docs.yaml",
+            "/swagger-ui.html",
+            "/swagger-ui/**",
+            "/swagger-ui/oauth2-redirect.html"
+    };
+
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // allow Swagger/health if you like
-                        .requestMatchers("/actuator/health", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
-                        // everything else needs a valid token
+                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers(SWAGGER_WHITELIST).permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -45,7 +53,6 @@ public class SecurityConfig {
                                 .decoder(jwtDecoderWithAudience())
                         )
                 );
-
         return http.build();
     }
 
