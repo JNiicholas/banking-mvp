@@ -72,7 +72,7 @@ public class AccountController {
         );
     }
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("@authz.canReadAccount(authentication, #id)")
     @GetMapping("/{id}/transactions")
     @Operation(summary = "List recent transactions", description = "Returns the last N transactions of the account (default 10)")
     public List<TransactionResponse> lastTransactions(@PathVariable("id") UUID id,

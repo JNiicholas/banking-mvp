@@ -54,6 +54,7 @@ public class SecurityConfig {
                         .requestMatchers(SWAGGER_WHITELIST).permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/customers/**").hasRole("ADMIN")
+                        .requestMatchers("/accounts/*/transactions").hasAnyRole("USER", "ADMIN")
                         .requestMatchers("/accounts/**").hasRole("USER")
                         .anyRequest().authenticated()
                 )
