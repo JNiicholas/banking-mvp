@@ -31,20 +31,17 @@ This starts the application and any dependent services defined in `docker-compos
 mvn clean generate-resources
 ```
 
-## Project Lombok
+## Checkstyle
 
-Project Lombok reduces Java boilerplate (getters/setters, constructors, builders, logging) by generating code at **compile time** via annotation processing. Lombok hooks into the Java compiler and modifies the **javac Abstract Syntax Tree (AST)** (often called the *compile tree*). When you annotate a class (e.g., with `@Getter`, `@Setter`, `@Builder`, `@Value`), Lombok injects the corresponding members into the AST *before* bytecode is written, so the generated methods/constructors are present in the compiled classes but not in your source files.
+Run Checkstyle to enforce coding standards:
 
-**Key points**
-- **Annotation processor**: Lombok runs as a compile-time processor that alters the AST. IDEs must enable **annotation processing** and usually need the **Lombok plugin** for correct code insight and navigation.
-- **Common annotations**: `@Getter`, `@Setter`, `@ToString`, `@EqualsAndHashCode`, `@RequiredArgsConstructor`, `@AllArgsConstructor`, `@NoArgsConstructor`, `@Builder`, `@Value`, `@Data`, and loggers like `@Slf4j`.
-- **Delombok**: To inspect generated code or for tools that require explicit sources, use *delombok* to materialize the generated members into plain Java sources.
+```bash
+# Run Checkstyle and fail the build on violations
+mvn checkstyle:check
 
-**Official resources**
-- Lombok home: https://projectlombok.org
-- Feature overview: https://projectlombok.org/features
-- IDE setup / annotation processing: https://projectlombok.org/setup/overview
-- Delombok: https://projectlombok.org/features/delombok
+# Generate a style report (does not fail the build)
+mvn checkstyle:checkstyle
+```
 
 ## Security (OWASP Dependency-Check)
 ## Keycloak
@@ -97,10 +94,29 @@ mvn org.owasp:dependency-check-maven:updateonly
 2. Store it as an environment variable, e.g. `NVD_API_KEY`.
 3. Expose it to the plugin via `<nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>` as shown above.
 
+
 **Official resources**
 - Dependency-Check docs (Maven): https://jeremylong.github.io/DependencyCheck/dependency-check-maven/index.html
 - Project repository: https://github.com/jeremylong/DependencyCheck
 - NVD API key request: https://nvd.nist.gov/developers/request-an-api-key
+
+
+## Project Lombok
+
+Project Lombok reduces Java boilerplate (getters/setters, constructors, builders, logging) by generating code at **compile time** via annotation processing. Lombok hooks into the Java compiler and modifies the **javac Abstract Syntax Tree (AST)** (often called the *compile tree*). When you annotate a class (e.g., with `@Getter`, `@Setter`, `@Builder`, `@Value`), Lombok injects the corresponding members into the AST *before* bytecode is written, so the generated methods/constructors are present in the compiled classes but not in your source files.
+
+**Key points**
+- **Annotation processor**: Lombok runs as a compile-time processor that alters the AST. IDEs must enable **annotation processing** and usually need the **Lombok plugin** for correct code insight and navigation.
+- **Common annotations**: `@Getter`, `@Setter`, `@ToString`, `@EqualsAndHashCode`, `@RequiredArgsConstructor`, `@AllArgsConstructor`, `@NoArgsConstructor`, `@Builder`, `@Value`, `@Data`, and loggers like `@Slf4j`.
+- **Delombok**: To inspect generated code or for tools that require explicit sources, use *delombok* to materialize the generated members into plain Java sources.
+
+**Official resources**
+- Lombok home: https://projectlombok.org
+- Feature overview: https://projectlombok.org/features
+- IDE setup / annotation processing: https://projectlombok.org/setup/overview
+- Delombok: https://projectlombok.org/features/delombok
+
+
 
 ## Example API calls
 

@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+        "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+        "https://checkstyle.org/dtds/configuration_1_3.dtd">
+
+<module name="Checker">
+    <!-- Global (non-TreeWalker) checks -->
+    <property name="severity" value="warning"/>
+
+    <!-- Example: LineLength is a Checker-level module -->
+    <module name="LineLength">
+        <property name="max" value="120"/>
+    </module>
+
+    <!-- Most code-style checks live under TreeWalker -->
+    <module name="TreeWalker">
+        <!-- Braces required for if/else/for/while/do -->
+        <module name="NeedBraces"/>
+
+        <!-- Disallow wildcard imports -->
+        <module name="AvoidStarImport"/>
+
+        <!-- Remove unused and redundant imports -->
+        <module name="RedundantImport"/>
+        <module name="UnusedImports"/>
+
+        <!-- Enforce import ordering: non-static first (standard, third-party, same-package), static imports last -->
+        <module name="ImportOrder">
+            <!-- Enforce alphabetical order within groups -->
+            <property name="ordered" value="true"/>
+            <!-- Require a blank line between groups -->
+            <property name="separated" value="true"/>
+            <!-- Put static imports at the bottom (last) -->
+            <property name="option" value="bottom"/>
+            <!-- Define non-static import groups in order -->
+            <property name="groups" value="java,javax,org,com"/>
+        </module>
+
+        <!-- Forbid use of sun.* packages -->
+        <module name="IllegalImport">
+            <property name="illegalPkgs" value="sun"/>
+        </module>
+
+        <!-- Add other TreeWalker-based checks here -->
+        <!-- e.g., MethodName, ParameterName, MissingSwitchDefault, etc. -->
+    </module>
+
+    <!-- Optional: suppressions via a file -->
+    <!-- Alternative is to configure in the Maven plugin with <suppressionsFile> -->
+    <!--
+    <module name="SuppressionFilter">
+      <property name="file" value="config/checkstyle/suppressions.xml"/>
+    </module>
+    -->
+</module>
