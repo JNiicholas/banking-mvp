@@ -11,21 +11,21 @@ public interface AccountEntityMapper {
 
     // entity -> domain (id is fine to expose to the domain)
     @Mapping(target = "id", source = "id")
-    @Mapping(target = "customerId", source = "customerId")
+    @Mapping(target = "customerId", source = "customer.id")
     @Mapping(target = "balance", source = "balance")
     Account toDomain(AccountEntity entity);
 
     // domain -> entity (CREATE): let JPA/DB set id & version
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "version", ignore = true)
-    @Mapping(target = "customerId", source = "customerId")
+    @Mapping(target = "customer.id", source = "customerId")
     @Mapping(target = "balance", source = "balance")
     AccountEntity toNewEntity(Account domain);
 
     // domain -> entity (UPDATE): copy mutable fields onto a managed entity
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "version", ignore = true)
-    @Mapping(target = "customerId", source = "customerId")
+    @Mapping(target = "customer.id", source = "customerId")
     @Mapping(target = "balance", source = "balance")
     void updateEntity(@org.mapstruct.MappingTarget AccountEntity entity, Account domain);
 }

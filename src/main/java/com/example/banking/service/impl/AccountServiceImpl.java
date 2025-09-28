@@ -59,7 +59,7 @@ public class AccountServiceImpl implements AccountService {
         UUID callerCustomerId = resolveCallerCustomerId(callerExternalId, callerRealm);
         AccountEntity entity = accountRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Account not found: " + id));
-        if (!entity.getCustomerId().equals(callerCustomerId)) {
+        if (!entity.getCustomer().getId().equals(callerCustomerId)) {
             // Hide existence to avoid information leakage
             throw new NotFoundException("Account not found: " + id);
         }
@@ -75,7 +75,7 @@ public class AccountServiceImpl implements AccountService {
 
         AccountEntity entity = accountRepository.findByIdForUpdate(accountId)
                 .orElseThrow(() -> new NotFoundException("Account not found: " + accountId));
-        if (!entity.getCustomerId().equals(callerCustomerId)) {
+        if (!entity.getCustomer().getId().equals(callerCustomerId)) {
             throw new NotFoundException("Account not found: " + accountId);
         }
 
@@ -97,7 +97,7 @@ public class AccountServiceImpl implements AccountService {
 
         AccountEntity entity = accountRepository.findByIdForUpdate(accountId)
                 .orElseThrow(() -> new NotFoundException("Account not found: " + accountId));
-        if (!entity.getCustomerId().equals(callerCustomerId)) {
+        if (!entity.getCustomer().getId().equals(callerCustomerId)) {
             throw new NotFoundException("Account not found: " + accountId);
         }
 

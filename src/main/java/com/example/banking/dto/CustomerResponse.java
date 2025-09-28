@@ -1,5 +1,6 @@
 package com.example.banking.dto;
 
+import java.util.List;
 import java.util.UUID;
 
 public record CustomerResponse(
@@ -8,5 +9,6 @@ public record CustomerResponse(
         String lastName,
         String email,
         UUID externalAuthId,
-        String externalAuthRealm
+        String externalAuthRealm,
+        List<AccountSummary> accounts
 ) {}

@@ -3,6 +3,8 @@ package com.example.banking.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -36,4 +38,7 @@ public class CustomerEntity {
 
     @Column(name = "external_auth_realm", length = 64)
     private String externalAuthRealm; // nullable; useful if multiple realms are used
+
+    @OneToMany(mappedBy = "customer", fetch = FetchType.LAZY)
+    private List<AccountEntity> accounts = new ArrayList<>();
 }

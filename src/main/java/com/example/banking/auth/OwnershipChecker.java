@@ -26,7 +26,7 @@ public class OwnershipChecker {
                 .map(CustomerEntity::getId);
 
         // Check if the account is owned by that customer id
-        return callerCustomerId.filter(uuid -> accountRepository.existsByIdAndCustomerId(accountId, uuid)).isPresent();
+        return callerCustomerId.filter(uuid -> accountRepository.existsByIdAndCustomer_Id(accountId, uuid)).isPresent();
 
 
     }

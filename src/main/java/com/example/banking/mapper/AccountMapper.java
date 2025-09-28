@@ -1,5 +1,6 @@
 package com.example.banking.mapper;
 
+import com.example.banking.dto.AccountSummary;
 import com.example.banking.entity.AccountEntity;
 import com.example.banking.model.Account;
 import com.example.banking.dto.AccountResponse;
@@ -18,7 +19,12 @@ public interface AccountMapper {
 
     // Entity -> Domain
     @Mapping(target = "id", source = "id")
-    @Mapping(target = "customerId", source = "customerId")
+    @Mapping(target = "customerId", source = "customer.id")
     @Mapping(target = "balance", source = "balance")
     Account toDomain(AccountEntity entity);
+
+    // Domain -> DTO summary
+    @Mapping(target = "id", source = "id")
+    @Mapping(target = "balance", source = "balance")
+    AccountSummary toSummary(Account domain);
 }

@@ -15,8 +15,9 @@ public class AccountEntity {
     @Id
     @GeneratedValue
     private UUID id;
-    @Column(nullable=false)
-    private UUID customerId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "customer_id", nullable = false)
+    private CustomerEntity customer;
     @Column(nullable=false, precision=19, scale=4)
     private BigDecimal balance;
 

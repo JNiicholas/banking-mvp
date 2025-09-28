@@ -19,6 +19,7 @@ public interface CustomerEntityMapper {
     @Mapping(target = "email", source = "email")
     @Mapping(target = "externalAuthId", source = "externalAuthId")
     @Mapping(target = "externalAuthRealm", source = "externalAuthRealm")
+    @Mapping(target = "accounts", source = "accounts")
     CustomerEntity toEntity(Customer domain);
 
 }

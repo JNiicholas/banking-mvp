@@ -19,6 +19,7 @@ public interface CustomerMapper {
     @Mapping(target = "email", source = "email")
     @Mapping(target = "externalAuthId", source = "externalAuthId")
     @Mapping(target = "externalAuthRealm", source = "externalAuthRealm")
+    @Mapping(target = "accounts", source = "accounts")
     CustomerResponse toResponse(Customer domain);
 
     @Mapping(target = "id", source = "id")
