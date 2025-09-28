@@ -135,7 +135,7 @@ class CustomerServiceImplTest {
         var d1 = Customer.builder().id(id1).firstName("A").lastName("One").email("a@example.com").build();
         var d2 = Customer.builder().id(id2).firstName("B").lastName("Two").email("b@example.com").build();
 
-        given(customerRepository.findAll()).willReturn(List.of(e1, e2));
+        given(customerRepository.findAllWithAccounts()).willReturn(List.of(e1, e2));
         given(customerEntityMapper.toDomain(e1)).willReturn(d1);
         given(customerEntityMapper.toDomain(e2)).willReturn(d2);
 
@@ -147,7 +147,7 @@ class CustomerServiceImplTest {
         assertEquals(id1, result.get(0).getId());
         assertEquals(id2, result.get(1).getId());
 
-        then(customerRepository).should().findAll();
+        then(customerRepository).should().findAllWithAccounts();
         then(customerEntityMapper).should().toDomain(e1);
         then(customerEntityMapper).should().toDomain(e2);
         then(customerRepository).shouldHaveNoMoreInteractions();

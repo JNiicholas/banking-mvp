@@ -50,13 +50,7 @@ class AccountServiceImplTest {
 
 
         // customer exists
-        given(customerRepository.findById(eq(customerId)))
-                .willReturn(Optional.of(CustomerEntity.builder()
-                        .id(customerId)
-                        .firstName("Jonas")
-                        .lastName("Iqbal")
-                        .email("jonas@iqbal.dk")
-                        .build()));
+        given(customerRepository.existsById(eq(customerId))).willReturn(true);
 
 
         given(accountEntityMapper.toNewEntity(any(Account.class)))
@@ -64,21 +58,12 @@ class AccountServiceImplTest {
                     Account a = inv.getArgument(0);
                     var e = new AccountEntity();
                     e.setId(UUID.randomUUID());            // DB will set in real life; any UUID is fine for the test
-                    e.setCustomerId(a.getCustomerId());
+                    var ce = new CustomerEntity();
+                    ce.setId(a.getCustomerId());
+                    e.setCustomer(ce);
                     e.setBalance(a.getBalance());
                     e.setVersion(0L);
                     return e;
-                });
-
-        given(customerEntityMapper.toDomain(any(CustomerEntity.class)))
-                .willAnswer(inv -> {
-                    var e = (CustomerEntity) inv.getArgument(0);
-                    return Customer.builder()
-                            .id(e.getId())
-                            .firstName(e.getFirstName())
-                            .lastName(e.getLastName())
-                            .email(e.getEmail())
-                            .build();
                 });
         // DB generates account id
         UUID accountId = UUID.randomUUID();
@@ -95,7 +80,7 @@ class AccountServiceImplTest {
         assertEquals(customerId, result.getCustomerId());
         assertEquals(0, result.getBalance().compareTo(bd("0.0000")));
 
-        then(customerRepository).should().findById(customerId);
+        then(customerRepository).should().existsById(customerId);
         then(accountRepository).should().save(any(AccountEntity.class));
         then(accountEntityMapper).should().toDomain(savedEntity);
     }
@@ -115,8 +100,6 @@ class AccountServiceImplTest {
                 .build();
         given(customerRepository.findByExternalAuthIdAndExternalAuthRealm(eq(callerExternalId), eq(callerRealm)))
                 .willReturn(Optional.of(callerCustomerEntity));
-        given(customerEntityMapper.toDomain(callerCustomerEntity)).willReturn(Customer.builder()
-                .id(customerId).firstName("Caller").lastName("Owner").email("owner@test.local").build());
 
         var entity = AccountEntityBuilder(id, customerId, bd("100.0000"));
         var domain = Account.builder().id(id).customerId(customerId).balance(bd("100.0000")).build();
@@ -139,7 +122,6 @@ class AccountServiceImplTest {
                 .email("c@test.local").externalAuthId(callerExternalId).externalAuthRealm(callerRealm).build();
         given(customerRepository.findByExternalAuthIdAndExternalAuthRealm(eq(callerExternalId), eq(callerRealm)))
                 .willReturn(Optional.of(callerCustomerEntity));
-        given(customerEntityMapper.toDomain(callerCustomerEntity)).willReturn(Customer.builder().id(customerId).firstName("C").lastName("O").email("c@test.local").build());
 
         UUID id = UUID.randomUUID();
         given(accountRepository.findById(id)).willReturn(Optional.empty());
@@ -155,7 +137,6 @@ class AccountServiceImplTest {
                 .email("c@test.local").externalAuthId(callerExternalId).externalAuthRealm(callerRealm).build();
         given(customerRepository.findByExternalAuthIdAndExternalAuthRealm(eq(callerExternalId), eq(callerRealm)))
                 .willReturn(Optional.of(callerCustomerEntity));
-        given(customerEntityMapper.toDomain(callerCustomerEntity)).willReturn(Customer.builder().id(customerId).firstName("C").lastName("O").email("c@test.local").build());
 
         var entityBefore = AccountEntityBuilder(id, customerId, bd("100.0000"));
         var entityAfter = AccountEntityBuilder(id, customerId, bd("150.0000"));
@@ -182,7 +163,7 @@ class AccountServiceImplTest {
                     AccountEntity e = inv.getArgument(0);
                     return Account.builder()
                             .id(e.getId())
-                            .customerId(e.getCustomerId())
+                            .customerId(e.getCustomer().getId())
                             .balance(e.getBalance())
                             .build();
                 });
@@ -204,7 +185,6 @@ class AccountServiceImplTest {
                 .email("c@test.local").externalAuthId(callerExternalId).externalAuthRealm(callerRealm).build();
         given(customerRepository.findByExternalAuthIdAndExternalAuthRealm(eq(callerExternalId), eq(callerRealm)))
                 .willReturn(Optional.of(callerCustomerEntity));
-        given(customerEntityMapper.toDomain(callerCustomerEntity)).willReturn(Customer.builder().id(customerId).firstName("C").lastName("O").email("c@test.local").build());
 
         var entityBefore = AccountEntityBuilder(id, customerId, bd("100.0000"));
         var entityAfter = AccountEntityBuilder(id, customerId, bd("60.0000"));
@@ -231,7 +211,7 @@ class AccountServiceImplTest {
                     AccountEntity e = inv.getArgument(0);
                     return Account.builder()
                             .id(e.getId())
-                            .customerId(e.getCustomerId())
+                            .customerId(e.getCustomer().getId())
                             .balance(e.getBalance())
                             .build();
                 });
@@ -252,7 +232,6 @@ class AccountServiceImplTest {
                 .email("c@test.local").externalAuthId(callerExternalId).externalAuthRealm(callerRealm).build();
         given(customerRepository.findByExternalAuthIdAndExternalAuthRealm(eq(callerExternalId), eq(callerRealm)))
                 .willReturn(Optional.of(callerCustomerEntity));
-        given(customerEntityMapper.toDomain(callerCustomerEntity)).willReturn(Customer.builder().id(customerId).firstName("C").lastName("O").email("c@test.local").build());
 
         var entity = AccountEntityBuilder(id, customerId, bd("10.00"));
         given(accountRepository.findByIdForUpdate(id)).willReturn(Optional.of(entity));
@@ -272,7 +251,6 @@ class AccountServiceImplTest {
                 .email("c@test.local").externalAuthId(callerExternalId).externalAuthRealm(callerRealm).build();
         given(customerRepository.findByExternalAuthIdAndExternalAuthRealm(eq(callerExternalId), eq(callerRealm)))
                 .willReturn(Optional.of(callerCustomerEntity));
-        given(customerEntityMapper.toDomain(callerCustomerEntity)).willReturn(Customer.builder().id(customerId).firstName("C").lastName("O").email("c@test.local").build());
 
         var entity = AccountEntityBuilder(id, customerId, bd("123.4500"));
         given(accountRepository.findById(any(UUID.class))).willReturn(Optional.of(entity));
@@ -281,7 +259,7 @@ class AccountServiceImplTest {
                     AccountEntity e = inv.getArgument(0);
                     return Account.builder()
                             .id(e.getId())
-                            .customerId(e.getCustomerId())
+                            .customerId(e.getCustomer().getId())
                             .balance(e.getBalance())
                             .build();
                 });
@@ -300,7 +278,6 @@ class AccountServiceImplTest {
                 .email("c@test.local").externalAuthId(callerExternalId).externalAuthRealm(callerRealm).build();
         given(customerRepository.findByExternalAuthIdAndExternalAuthRealm(eq(callerExternalId), eq(callerRealm)))
                 .willReturn(Optional.of(callerCustomerEntity));
-        given(customerEntityMapper.toDomain(callerCustomerEntity)).willReturn(Customer.builder().id(customerId).firstName("C").lastName("O").email("c@test.local").build());
 
         var ownerAccount = AccountEntityBuilder(accountId, customerId, bd("0.0000"));
         given(accountRepository.findById(eq(accountId))).willReturn(Optional.of(ownerAccount));
@@ -332,7 +309,9 @@ class AccountServiceImplTest {
     private static AccountEntity AccountEntityBuilder(UUID id, UUID customerId, BigDecimal balance) {
         var e = new AccountEntity();
         e.setId(id);
-        e.setCustomerId(customerId);
+        var ce = new CustomerEntity();
+        ce.setId(customerId);
+        e.setCustomer(ce);
         e.setBalance(balance);
         e.setVersion(0L);
         return e;

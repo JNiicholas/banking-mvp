@@ -2,6 +2,7 @@ package com.example.banking.mapper;
 
 import com.example.banking.dto.AccountResponse;
 import com.example.banking.entity.AccountEntity;
+import com.example.banking.entity.CustomerEntity;
 import com.example.banking.model.Account;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
@@ -39,7 +40,9 @@ class AccountMapperTest {
         UUID customerId = UUID.randomUUID();
         var entity = new AccountEntity();
         entity.setId(id);
-        entity.setCustomerId(customerId);
+        var customer = new CustomerEntity();
+        customer.setId(customerId);
+        entity.setCustomer(customer);
         entity.setBalance(new BigDecimal("42.5000"));
         entity.setVersion(3L);
 

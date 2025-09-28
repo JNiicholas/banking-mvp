@@ -37,13 +37,14 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public Account createAccount(CreateAccountRequest req) {
-        Customer c = customerRepository.findById(req.customerId())
-                .map(customerEntityMapper::toDomain)
-                .orElseThrow(() -> new NotFoundException("Customer not found: " + req.customerId()));
+        // Validate the customer exists without triggering lazy collections
+        if (!customerRepository.existsById(req.customerId())) {
+            throw new NotFoundException("Customer not found: " + req.customerId());
+        }
 
         // Build a domain object without an id; DB/JPA will generate id and version
         Account a = Account.builder()
-                .customerId(c.getId())
+                .customerId(req.customerId())
                 .balance(BigDecimal.ZERO)
                 .build();
 
@@ -143,8 +144,7 @@ public class AccountServiceImpl implements AccountService {
             throw new BadRequestException("Missing caller identity");
         }
         return customerRepository.findByExternalAuthIdAndExternalAuthRealm(externalAuthId, realm)
-                .map(customerEntityMapper::toDomain)
-                .map(Customer::getId)
+                .map(com.example.banking.entity.CustomerEntity::getId)
                 .orElseThrow(() -> new NotFoundException("Customer for caller not found"));
     }
 }

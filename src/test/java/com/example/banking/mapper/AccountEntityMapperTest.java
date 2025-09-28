@@ -1,6 +1,7 @@
 package com.example.banking.mapper;
 
 import com.example.banking.entity.AccountEntity;
+import com.example.banking.entity.CustomerEntity;
 import com.example.banking.model.Account;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
@@ -20,7 +21,9 @@ class AccountEntityMapperTest {
         UUID customerId = UUID.randomUUID();
         var entity = new AccountEntity();
         entity.setId(id);
-        entity.setCustomerId(customerId);
+        var ce = new CustomerEntity();
+        ce.setId(customerId);
+        entity.setCustomer(ce);
         entity.setBalance(new BigDecimal("123.4500"));
         entity.setVersion(7L);
 
@@ -45,7 +48,7 @@ class AccountEntityMapperTest {
         AccountEntity entity = mapper.toNewEntity(domain);
 
         assertNotNull(entity);
-        assertEquals(customerId, entity.getCustomerId());
+        assertEquals(customerId, entity.getCustomer().getId());
         assertEquals(0, entity.getBalance().compareTo(new BigDecimal("0.0000")));
         // version is managed by JPA; we don’t assert it here
     }

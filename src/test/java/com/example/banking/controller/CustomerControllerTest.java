@@ -4,6 +4,7 @@ import com.example.banking.dto.CreateCustomerRequest;
 import com.example.banking.dto.CustomerResponse;
 import com.example.banking.dto.AccountResponse;
 import com.example.banking.dto.CreateAccountRequest;
+import com.example.banking.dto.AccountSummary;
 import com.example.banking.exception.NotFoundException;
 import com.example.banking.mapper.CustomerMapper;
 import com.example.banking.mapper.AccountMapper;
@@ -69,7 +70,7 @@ class CustomerControllerTest {
         domain.setEmail("jonas@iqbal.dk");
         domain.setExternalAuthId(null);
         domain.setExternalAuthRealm(null);
-        var dto = new CustomerResponse(id, "Jonas", "Iqbal", "jonas@iqbal.dk", null, null);
+        var dto = new CustomerResponse(id, "Jonas", "Iqbal", "jonas@iqbal.dk", null, null, List.of());
 
         given(customerService.createCustomer(eq(req))).willReturn(domain);
         given(customerMapper.toResponse(eq(domain))).willReturn(dto);
@@ -120,7 +121,7 @@ class CustomerControllerTest {
         domain.setEmail("alice@example.com");
         domain.setExternalAuthId(null);
         domain.setExternalAuthRealm(null);
-        var dto = new CustomerResponse(id, "Alice", "Smith", "alice@example.com", null, null);
+        var dto = new CustomerResponse(id, "Alice", "Smith", "alice@example.com", null, null, List.of());
 
         given(customerService.getCustomer(eq(id))).willReturn(domain);
         given(customerMapper.toResponse(eq(domain))).willReturn(dto);
@@ -167,8 +168,8 @@ class CustomerControllerTest {
         c2.setExternalAuthId(null);
         c2.setExternalAuthRealm(null);
 
-        var d1 = new CustomerResponse(id1, "Alice", "Smith", "alice@example.com", null, null);
-        var d2 = new CustomerResponse(id2, "Bob", "Brown", "bob@example.com", null, null);
+        var d1 = new CustomerResponse(id1, "Alice", "Smith", "alice@example.com", null, null, List.of());
+        var d2 = new CustomerResponse(id2, "Bob", "Brown", "bob@example.com", null, null, List.of());
 
         given(customerService.getAllCustomers()).willReturn(List.of(c1, c2));
         given(customerMapper.toResponse(eq(c1))).willReturn(d1);
