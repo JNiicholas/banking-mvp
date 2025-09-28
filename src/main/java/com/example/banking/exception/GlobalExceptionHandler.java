@@ -15,6 +15,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.ServletWebRequest;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 
 @Slf4j
 @ControllerAdvice
@@ -84,6 +87,27 @@ public class GlobalExceptionHandler {
         log.warn("Data integrity violation at {}", req.getRequest().getRequestURI(), ex);
         ApiError err = new ApiError(409, "Conflict", "Request violates a data constraint.", req.getRequest().getRequestURI(), "CONSTRAINT_VIOLATION", traceId);
         return ResponseEntity.status(HttpStatus.CONFLICT).body(err);
+    }
+
+    @ExceptionHandler({AuthorizationDeniedException.class})
+    public ResponseEntity<ApiError> handleAuthorizationDenied(AuthorizationDeniedException ex, ServletWebRequest req) {
+        String traceId = MDC.get("traceId");
+        ApiError err = new ApiError(403, "Forbidden", "Access denied.", req.getRequest().getRequestURI(), "FORBIDDEN", traceId);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(err);
+    }
+
+    @ExceptionHandler({AccessDeniedException.class})
+    public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex, ServletWebRequest req) {
+        String traceId = MDC.get("traceId");
+        ApiError err = new ApiError(403, "Forbidden", "Access denied.", req.getRequest().getRequestURI(), "FORBIDDEN", traceId);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(err);
+    }
+
+    @ExceptionHandler({AuthenticationException.class})
+    public ResponseEntity<ApiError> handleAuthentication(AuthenticationException ex, ServletWebRequest req) {
+        String traceId = MDC.get("traceId");
+        ApiError err = new ApiError(401, "Unauthorized", "Authentication required or invalid token.", req.getRequest().getRequestURI(), "UNAUTHORIZED", traceId);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(err);
     }
 
     @ExceptionHandler(Exception.class)

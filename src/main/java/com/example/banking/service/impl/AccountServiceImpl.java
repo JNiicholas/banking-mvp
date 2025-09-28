@@ -57,13 +57,9 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public Account getAccount(UUID id, UUID callerExternalId, String callerRealm) {
-        UUID callerCustomerId = resolveCallerCustomerId(callerExternalId, callerRealm);
+        // Read-only: authorization is handled by @PreAuthorize at the controller level
         AccountEntity entity = accountRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Account not found: " + id));
-        if (!entity.getCustomer().getId().equals(callerCustomerId)) {
-            // Hide existence to avoid information leakage
-            throw new NotFoundException("Account not found: " + id);
-        }
         return accountEntityMapper.toDomain(entity);
     }
 
@@ -118,13 +114,20 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public BigDecimal getBalance(UUID accountId, UUID callerExternalId, String callerRealm) {
-        return getAccount(accountId, callerExternalId, callerRealm).getBalance();
+        // Read-only: authorization is handled by @PreAuthorize at the controller level
+        return accountRepository.findById(accountId)
+                .map(AccountEntity::getBalance)
+                .orElseThrow(() -> new NotFoundException("Account not found: " + accountId));
     }
 
     @Override
     public List<Transaction> getLastTransactions(UUID accountId, int limit, UUID callerExternalId, String callerRealm) {
-        // Ensure ownership first (and existence)
-        getAccount(accountId, callerExternalId, callerRealm);
+        // Authorization is enforced at the controller via @PreAuthorize("@authz.canReadAccount(...)")
+        // Keep NotFound semantics without triggering lazy loads
+        if (!accountRepository.existsById(accountId)) {
+            throw new NotFoundException("Account not found: " + accountId);
+        }
+
         int n = Math.max(1, limit);
         var page = PageRequest.of(0, n);
         return transactionRepository.findRecentByAccountId(accountId, page)

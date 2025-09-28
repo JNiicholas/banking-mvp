@@ -18,6 +18,7 @@ import org.springframework.security.oauth2.jwt.*;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.http.HttpMethod;
 
 import java.util.List;
 import java.util.Arrays;
@@ -54,9 +55,13 @@ public class SecurityConfig {
                         .requestMatchers(SWAGGER_WHITELIST).permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/customers/**").hasRole("ADMIN")
-                        .requestMatchers("/accounts/*/transactions").hasAnyRole("USER", "ADMIN")
+                        // Allow USER and ADMIN to read specific account resources; other account ops remain USER-only
+                        .requestMatchers(HttpMethod.GET, "/accounts/*").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/accounts/*/balance").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/accounts/*/transactions").hasAnyRole("USER", "ADMIN")
+
+                        // All other /accounts/** endpoints restricted to USER
                         .requestMatchers("/accounts/**").hasRole("USER")
-                        .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt

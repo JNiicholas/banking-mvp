@@ -53,7 +53,7 @@ public class AccountController {
         return accountMapper.toResponse(withdraw);
     }
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("@authz.canReadAccount(authentication, #id)")
     @GetMapping("/{id}")
     @Operation(summary = "Get account by id", description = "Fetches an account by its identifier")
     public AccountResponse getById(@PathVariable("id") UUID id, @AuthenticationPrincipal Jwt jwt) {
@@ -63,7 +63,7 @@ public class AccountController {
         return accountMapper.toResponse(account);
     }
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("@authz.canReadAccount(authentication, #id)")
     @GetMapping("/{id}/balance")
     @Operation(summary = "Get account balance", description = "Fetches the current balance of the account")
     public BigDecimal balance(@PathVariable("id") UUID id, @AuthenticationPrincipal Jwt jwt) {
