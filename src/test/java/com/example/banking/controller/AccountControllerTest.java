@@ -50,7 +50,15 @@ class AccountControllerTest {
         UUID id = UUID.randomUUID();
         UUID customerId = UUID.randomUUID();
         var domain = Account.builder().id(id).customerId(customerId).balance(new BigDecimal("100.0000")).build();
-        var dto = new AccountResponse(id, customerId, new BigDecimal("100.0000"));
+
+        var dto = AccountResponse.builder()
+                .id(id)
+                .customerId(customerId)
+                .balance(new BigDecimal("100.0000"))
+                .ibanCountry("DE")
+                .ibanNormalized("DE80270925559385021793")
+                .ibanDisplay("DE80 2709 2555 9385 0217 93")
+                .build();
 
         UUID callerExternalId = UUID.randomUUID();
         String callerRealm = "BankingApp";
@@ -100,7 +108,14 @@ class AccountControllerTest {
 
         var req = new AmountRequest(new BigDecimal("50.00"));
         var updated = Account.builder().id(id).customerId(customerId).balance(new BigDecimal("150.0000")).build();
-        var dto = new AccountResponse(id, customerId, new BigDecimal("150.0000"));
+        var dto = AccountResponse.builder()
+                .id(id)
+                .customerId(customerId)
+                .balance(new BigDecimal("150.0000"))
+                .ibanCountry("DE")
+                .ibanNormalized("DE10270925550000000001")
+                .ibanDisplay("DE10 2709 2555 0000 0000 01")
+                .build();
 
         BDDMockito.given(accountService.deposit(eq(id), eq(req.amount()), eq(callerExternalId), eq(callerRealm)))
                 .willReturn(updated);
@@ -129,7 +144,14 @@ class AccountControllerTest {
 
         var req = new AmountRequest(new BigDecimal("25.00"));
         var updated = Account.builder().id(id).customerId(customerId).balance(new BigDecimal("75.0000")).build();
-        var dto = new AccountResponse(id, customerId, new BigDecimal("75.0000"));
+        var dto = AccountResponse.builder()
+                .id(id)
+                .customerId(customerId)
+                .balance(new BigDecimal("75.0000"))
+                .ibanCountry("DE")
+                .ibanNormalized("DE11270925550000000002")
+                .ibanDisplay("DE11 2709 2555 0000 0000 02")
+                .build();
 
         BDDMockito.given(accountService.withdraw(eq(id), eq(req.amount()), eq(callerExternalId), eq(callerRealm)))
                 .willReturn(updated);

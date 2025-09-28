@@ -4,6 +4,7 @@ import com.example.banking.dto.CreateAccountRequest;
 import com.example.banking.entity.AccountEntity;
 import com.example.banking.exception.BadRequestException;
 import com.example.banking.exception.NotFoundException;
+import com.example.banking.iban.IbanGenerator;
 import com.example.banking.mapper.AccountEntityMapper;
 import com.example.banking.mapper.CustomerEntityMapper;
 import com.example.banking.mapper.TransactionEntityMapper;
@@ -33,25 +34,33 @@ public class AccountServiceImpl implements AccountService {
     private final AccountEntityMapper accountEntityMapper;
     private final CustomerEntityMapper customerEntityMapper;
     private final TransactionEntityMapper transactionEntityMapper;
+    private final IbanGenerator ibanGenerator;
 
 
     @Override
+    @Transactional
     public Account createAccount(CreateAccountRequest req) {
         // Validate the customer exists without triggering lazy collections
         if (!customerRepository.existsById(req.customerId())) {
             throw new NotFoundException("Customer not found: " + req.customerId());
         }
 
-        // Build a domain object without an id; DB/JPA will generate id and version
         Account a = Account.builder()
                 .customerId(req.customerId())
                 .balance(BigDecimal.ZERO)
                 .build();
 
-        // Use the new mapper method that intentionally ignores id/version for inserts
+        // Map to entity
         AccountEntity toSave = accountEntityMapper.toNewEntity(a);
-        AccountEntity saved = accountRepository.save(toSave);
 
+        // Generate IBAN independent of UUID and set BEFORE persisting
+        var iban = ibanGenerator.generateNew();
+        toSave.setIbanCountry(iban.country());
+        toSave.setIbanNormalized(iban.normalized());
+        toSave.setIbanDisplay(iban.display());
+
+        // Single insert
+        AccountEntity saved = accountRepository.save(toSave);
         return accountEntityMapper.toDomain(saved);
     }
 

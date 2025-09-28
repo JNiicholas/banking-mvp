@@ -16,6 +16,9 @@ import java.util.UUID;
 public class Account {
     private UUID id;
     private UUID customerId;
+    private String ibanCountry;
+    private String ibanNormalized;
+    private String ibanDisplay;
 
     @Setter
     @Builder.Default

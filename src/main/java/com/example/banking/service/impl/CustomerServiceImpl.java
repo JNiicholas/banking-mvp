@@ -13,6 +13,7 @@ import com.example.banking.repository.CustomerRepository;
 import com.example.banking.service.api.CustomerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -57,13 +58,16 @@ public class CustomerServiceImpl implements CustomerService {
         return customerEntityMapper.toDomain(customerRepository.save(entity));
     }
 
+    @Transactional(readOnly = true)
     @Override
     public Customer getCustomer(UUID id) {
-        return customerRepository.findById(id)
+        return customerRepository.findOneById(id)
                 .map(customerEntityMapper::toDomain)
                 .orElseThrow(() -> new NotFoundException("Customer not found: " + id));
     }
 
+
+    @Transactional(readOnly = true)
     @Override
     public List<Customer> getAllCustomers() {
         return customerRepository.findAllWithAccounts()

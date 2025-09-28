@@ -195,7 +195,14 @@ class CustomerControllerTest {
 
         var req = new CreateAccountRequest(customerId);
         var domain = Account.builder().id(id).customerId(customerId).balance(new BigDecimal("0.0000")).build();
-        var dto = new AccountResponse(id, customerId, new BigDecimal("0.0000"));
+        var dto = AccountResponse.builder()
+                .id(id)
+                .customerId(customerId)
+                .balance(new BigDecimal("0.0000"))
+                .ibanCountry("DE")
+                .ibanNormalized("DE99270925550000000000")
+                .ibanDisplay("DE99 2709 2555 0000 0000 00")
+                .build();
 
         given(accountService.createAccount(eq(req))).willReturn(domain);
         given(accountMapper.toResponse(eq(domain))).willReturn(dto);

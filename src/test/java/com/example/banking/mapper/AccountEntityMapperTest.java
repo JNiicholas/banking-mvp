@@ -26,6 +26,9 @@ class AccountEntityMapperTest {
         entity.setCustomer(ce);
         entity.setBalance(new BigDecimal("123.4500"));
         entity.setVersion(7L);
+        entity.setIbanCountry("DE");
+        entity.setIbanNormalized("DE80270925559385021793");
+        entity.setIbanDisplay("DE80 2709 2555 9385 0217 93");
 
         Account domain = mapper.toDomain(entity);
 
@@ -33,23 +36,32 @@ class AccountEntityMapperTest {
         assertEquals(id, domain.getId());
         assertEquals(customerId, domain.getCustomerId());
         assertEquals(0, domain.getBalance().compareTo(new BigDecimal("123.4500")));
+        assertEquals("DE", domain.getIbanCountry());
+        assertEquals("DE80270925559385021793", domain.getIbanNormalized());
+        assertEquals("DE80 2709 2555 9385 0217 93", domain.getIbanDisplay());
     }
 
     @Test
     void toEntity_mapsAllFields() {
         UUID id = UUID.randomUUID();
         UUID customerId = UUID.randomUUID();
-        var domain = Account.builder()
+        Account domain = Account.builder()
                 .id(id)
                 .customerId(customerId)
-                .balance(new BigDecimal("0.0000"))
+                .balance(new BigDecimal("100.00"))
+                .ibanCountry("DE")
+                .ibanNormalized("DE80270925559385021793")
+                .ibanDisplay("DE80 2709 2555 9385 0217 93")
                 .build();
 
         AccountEntity entity = mapper.toNewEntity(domain);
 
         assertNotNull(entity);
         assertEquals(customerId, entity.getCustomer().getId());
-        assertEquals(0, entity.getBalance().compareTo(new BigDecimal("0.0000")));
+        assertEquals(0, entity.getBalance().compareTo(new BigDecimal("100.00")));
+        assertEquals("DE", entity.getIbanCountry());
+        assertEquals("DE80270925559385021793", entity.getIbanNormalized());
+        assertEquals("DE80 2709 2555 9385 0217 93", entity.getIbanDisplay());
         // version is managed by JPA; we don’t assert it here
     }
 }

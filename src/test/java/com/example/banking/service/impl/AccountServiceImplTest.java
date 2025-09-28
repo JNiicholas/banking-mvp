@@ -1,11 +1,14 @@
 package com.example.banking.service.impl;
 
 import com.example.banking.dto.CreateAccountRequest;
+import com.example.banking.dto.IbanResult;
 import com.example.banking.entity.AccountEntity;
 import com.example.banking.entity.CustomerEntity;
 import com.example.banking.entity.TransactionEntity;
 import com.example.banking.exception.BadRequestException;
 import com.example.banking.exception.NotFoundException;
+import com.example.banking.iban.IbanGenerator;
+
 import com.example.banking.mapper.AccountEntityMapper;
 import com.example.banking.mapper.CustomerEntityMapper;
 import com.example.banking.mapper.TransactionEntityMapper;
@@ -39,6 +42,7 @@ class AccountServiceImplTest {
     @Mock private AccountEntityMapper accountEntityMapper;
     @Mock private TransactionEntityMapper transactionEntityMapper;
     @Mock private CustomerEntityMapper customerEntityMapper;
+    @Mock private IbanGenerator ibanGenerator;
 
     @InjectMocks
     private AccountServiceImpl accountService; // class under test
@@ -51,6 +55,10 @@ class AccountServiceImplTest {
 
         // customer exists
         given(customerRepository.existsById(eq(customerId))).willReturn(true);
+
+        // IBAN generation for new accounts
+        given(ibanGenerator.generateNew())
+                .willReturn(new IbanResult("DE", "DE80270925559385021793", "DE80 2709 2555 9385 0217 93"));
 
 
         given(accountEntityMapper.toNewEntity(any(Account.class)))

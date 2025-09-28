@@ -5,5 +5,8 @@ import java.util.UUID;
 
 public record AccountSummary(
         UUID id,
-        BigDecimal balance
+        BigDecimal balance,
+        String ibanCountry,
+        String ibanNormalized,
+        String ibanDisplay
 ) {}

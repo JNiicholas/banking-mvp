@@ -23,4 +23,7 @@ public interface AccountRepository extends JpaRepository<AccountEntity, UUID> {
     List<AccountEntity> findByCustomerId(UUID customerId);
 
     boolean existsByIdAndCustomer_Id(UUID id, UUID customerId);
+
+    Optional<AccountEntity> findByIbanNormalized(String ibanNormalized);
+    boolean existsByIbanNormalized(String ibanNormalized);
 }

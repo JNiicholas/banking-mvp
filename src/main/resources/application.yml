@@ -57,3 +57,7 @@ keycloak:
   timeouts:
     connect-ms: 3000
     read-ms: 5000
+
+iban:
+  country: DE
+  bankCode: 27092555

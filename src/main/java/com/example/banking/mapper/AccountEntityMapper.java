@@ -13,6 +13,9 @@ public interface AccountEntityMapper {
     @Mapping(target = "id", source = "id")
     @Mapping(target = "customerId", source = "customer.id")
     @Mapping(target = "balance", source = "balance")
+    @Mapping(target = "ibanCountry", source = "ibanCountry")
+    @Mapping(target = "ibanNormalized", source = "ibanNormalized")
+    @Mapping(target = "ibanDisplay", source = "ibanDisplay")
     Account toDomain(AccountEntity entity);
 
     // domain -> entity (CREATE): let JPA/DB set id & version
@@ -20,6 +23,9 @@ public interface AccountEntityMapper {
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "customer.id", source = "customerId")
     @Mapping(target = "balance", source = "balance")
+    @Mapping(target = "ibanCountry", source = "ibanCountry")
+    @Mapping(target = "ibanNormalized", source = "ibanNormalized")
+    @Mapping(target = "ibanDisplay", source = "ibanDisplay")
     AccountEntity toNewEntity(Account domain);
 
     // domain -> entity (UPDATE): copy mutable fields onto a managed entity
@@ -27,5 +33,8 @@ public interface AccountEntityMapper {
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "customer.id", source = "customerId")
     @Mapping(target = "balance", source = "balance")
+    @Mapping(target = "ibanCountry", source = "ibanCountry")
+    @Mapping(target = "ibanNormalized", source = "ibanNormalized")
+    @Mapping(target = "ibanDisplay", source = "ibanDisplay")
     void updateEntity(@org.mapstruct.MappingTarget AccountEntity entity, Account domain);
 }

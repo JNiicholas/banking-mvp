@@ -15,16 +15,25 @@ public interface AccountMapper {
     @Mapping(target = "id", source = "id")
     @Mapping(target = "customerId", source = "customerId")
     @Mapping(target = "balance", source = "balance")
+    @Mapping(target = "ibanCountry", source = "ibanCountry")
+    @Mapping(target = "ibanNormalized", source = "ibanNormalized")
+    @Mapping(target = "ibanDisplay", source = "ibanDisplay")
     AccountResponse toResponse(Account account);
 
     // Entity -> Domain
     @Mapping(target = "id", source = "id")
     @Mapping(target = "customerId", source = "customer.id")
     @Mapping(target = "balance", source = "balance")
+    @Mapping(target = "ibanCountry", source = "ibanCountry")
+    @Mapping(target = "ibanNormalized", source = "ibanNormalized")
+    @Mapping(target = "ibanDisplay", source = "ibanDisplay")
     Account toDomain(AccountEntity entity);
 
     // Domain -> DTO summary
     @Mapping(target = "id", source = "id")
     @Mapping(target = "balance", source = "balance")
+    @Mapping(target = "ibanCountry", source = "ibanCountry")
+    @Mapping(target = "ibanNormalized", source = "ibanNormalized")
+    @Mapping(target = "ibanDisplay", source = "ibanDisplay")
     AccountSummary toSummary(Account domain);
 }

@@ -92,7 +92,7 @@ class CustomerServiceImplTest {
         var domain = Customer.builder()
                 .id(id).firstName("Alice").lastName("Smith").email("alice@example.com").build();
 
-        given(customerRepository.findById(id)).willReturn(Optional.of(entity));
+        given(customerRepository.findOneById(id)).willReturn(Optional.of(entity));
         given(customerEntityMapper.toDomain(entity)).willReturn(domain);
 
         // when
@@ -105,7 +105,7 @@ class CustomerServiceImplTest {
         assertEquals("Smith", result.getLastName());
         assertEquals("alice@example.com", result.getEmail());
 
-        then(customerRepository).should().findById(id);
+        then(customerRepository).should().findOneById(id);
         then(customerEntityMapper).should().toDomain(entity);
         then(customerRepository).shouldHaveNoMoreInteractions();
         then(customerEntityMapper).shouldHaveNoMoreInteractions();
@@ -115,12 +115,12 @@ class CustomerServiceImplTest {
     void getCustomer_notFound() {
         // given
         var id = UUID.randomUUID();
-        given(customerRepository.findById(id)).willReturn(Optional.empty());
+        given(customerRepository.findOneById(id)).willReturn(Optional.empty());
 
         // when / then
         assertThrows(NotFoundException.class, () -> customerService.getCustomer(id));
 
-        then(customerRepository).should().findById(id);
+        then(customerRepository).should().findOneById(id);
         then(customerEntityMapper).shouldHaveNoInteractions();
     }
 
