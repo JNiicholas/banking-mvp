@@ -252,6 +252,22 @@ BE --> FE: 200 OK + JWT (or 401)
 @enduml
 ....
 
+== Checkstyle
+We use **Checkstyle** to enforce consistent Java coding standards and avoid common style issues.
+Run Checkstyle locally with Maven:
+mvn checkstyle:check       # Run checks and fail the build if violations exist
+mvn checkstyle:checkstyle  # Generate a report without failing the build
+
+Reports:
+- Console output when using `check`
+- HTML report available at `target/site/checkstyle.html` when using `checkstyle`
+
+Rules:
+- Defined in `config/checkstyle/checkstyle.xml`
+- Suppressions (e.g. generated code) can be added to `config/checkstyle/suppressions.xml`
+
+Official documentation: https://checkstyle.org
+
 == Configuration
 You can externalize configuration via `application.yml`:
 
