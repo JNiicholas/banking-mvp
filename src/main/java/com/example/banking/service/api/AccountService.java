@@ -15,4 +15,5 @@ public interface AccountService {
     Account withdraw(UUID accountId, BigDecimal amount, UUID callerExternalId, String callerRealm);
     BigDecimal getBalance(UUID accountId, UUID callerExternalId, String callerRealm);
     List<Transaction> getLastTransactions(UUID accountId, int limit, UUID callerExternalId, String callerRealm);
+    List<Account> listMyAccounts(UUID callerExternalId, String callerRealm);
 }

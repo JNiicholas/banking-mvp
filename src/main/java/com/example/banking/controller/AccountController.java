@@ -53,6 +53,19 @@ public class AccountController {
         return accountMapper.toResponse(withdraw);
     }
 
+    @PreAuthorize("hasRole('USER')")
+    @GetMapping
+    @Operation(
+            summary = "List my accounts",
+            description = "Returns all accounts that belong to the currently authenticated customer"
+    )
+    public List<AccountSummaryResponse> listMyAccounts(@AuthenticationPrincipal Jwt jwt) {
+        var accounts = accountService.listMyAccounts(callerExternalId(jwt), callerRealm(jwt));
+        return accounts.stream()
+                .map(accountMapper::toAccountSummaryResponse)
+                .collect(Collectors.toList());
+    }
+
     @PreAuthorize("@authz.canReadAccount(authentication, #id)")
     @GetMapping("/{id}")
     @Operation(summary = "Get account by id", description = "Fetches an account by its identifier")

@@ -145,6 +145,18 @@ public class AccountServiceImpl implements AccountService {
                 .toList();
     }
 
+    @Override
+    public List<Account> listMyAccounts(UUID callerExternalId, String callerRealm) {
+        // Resolve the caller to our internal Customer ID
+        UUID customerId = resolveCallerCustomerId(callerExternalId, callerRealm);
+
+        // Fetch all accounts owned by this customer and map to domain
+        return accountRepository.findAllByCustomerId(customerId)
+                .stream()
+                .map(accountEntityMapper::toDomain)
+                .toList();
+    }
+
     private static void validateAmount(BigDecimal amount) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BadRequestException("Amount must be positive");
