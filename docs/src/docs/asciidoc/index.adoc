@@ -1,5 +1,5 @@
 = Project Documentation
-Jonas Iqbal <jonas@example.com>
+Jonas Iqbal <jonas@iqbal.dk>
 :toc: left
 :sectnums:
 :icons: font
@@ -35,7 +35,8 @@ The following diagram shows the high-level components:
 title High-Level Architecture
 
 actor User
-rectangle "Frontend (Angular/Nuxt)" as FE
+rectangle "Frontend (Angular)" as FE
+rectangle "Keycloak (IdP)" as KC
 node "Spring Boot" as SB {
   [Controller] --> [Service]
   [Service] --> [Repository]
@@ -43,7 +44,9 @@ node "Spring Boot" as SB {
 database "PostgreSQL" as DB
 
 User --> FE
-FE --> SB
+FE --> KC : OIDC login
+FE --> SB : API calls with JWT
+SB --> KC : validate token
 [Repository] --> DB
 @enduml
 ....
@@ -57,30 +60,39 @@ The application manages three primary entities: Account, Transaction, and Custom
 [plantuml, target=db-schema, format=svg]
 ....
 @startuml
-entity "Customer" {
-  * id : UUID
+entity "Customer" as CUSTOMER {
+  * id : UUID <<PK>>
   --
-  name : String
-  email : String
+  first_name : varchar(50)
+  last_name  : varchar(50)
+  email      : varchar(255)
+  external_auth_id    : UUID
+  external_auth_realm : varchar(64)
 }
-entity "Account" {
-  * id : UUID
+
+entity "Account" as ACCOUNT {
+  * id : UUID <<PK>>
   --
-  balance : BigDecimal
-  version : int
-  customer_id : UUID
+  customer_id   : UUID <<FK Customer.id>>
+  balance       : numeric(19,4)
+  version       : bigint
+  iban_country  : varchar(2)
+  iban_normalized : varchar(34)
+  iban_display    : varchar(42)
 }
-entity "Transaction" {
-  * id : UUID
+
+entity "Transaction" as TX {
+  * id : UUID <<PK>>
   --
-  type : enum
-  amount : BigDecimal
-  balance_after : BigDecimal
-  timestamp : Instant
-  account_id : UUID
+  account_id    : UUID <<FK Account.id>>
+  timestamp     : timestamptz
+  type          : varchar(16)
+  amount        : numeric(19,4)
+  balance_after : numeric(19,4)
 }
-Customer ||--o{ Account
-Account ||--o{ Transaction
+
+CUSTOMER ||--o{ ACCOUNT
+ACCOUNT  ||--o{ TX
 @enduml
 ....
 
@@ -92,6 +104,15 @@ Database schema versioning and migrations are managed using Flyway, which applie
 The application secures endpoints using OAuth2 login integrated with Keycloak as the identity provider. Configuration includes specifying the issuer-uri and accepted audiences to validate JWT tokens. This setup enables single sign-on and centralized user management. For testing API security, Postman can be configured to obtain OAuth2 tokens from Keycloak and include them in requests, facilitating end-to-end security verification.
 
 *Keycloak Admin Console:* link:http://localhost:8081/admin/[http://localhost:8081/admin/]
+
+*Realm export (preconfigured settings)*::
+A ready-to-import Keycloak realm configuration is provided under `config/keycloak/realm-export/` in this repository. It contains the realm, client(s), roles, and example users used by this project.
+
+How to use:
+- **Admin console import**: In Keycloak, go to *Realm settings → Import*, select the JSON from `config/keycloak/realm-export/`, and import.
+- **Docker start with import** (optional): Mount the folder and start Keycloak with `--import-realm` so the realm is auto‑imported on startup.
+
+This is the exact configuration the application expects by default, so importing it ensures JWT audiences/roles/clients match the backend security configuration.
 
 == Logging
 
@@ -240,17 +261,164 @@ Official resources:
 @startuml
 autonumber
 actor User
-participant "Frontend" as FE
-participant "Backend" as BE
+participant "Frontend (Angular)" as FE
+participant "Keycloak (IdP)" as KC
+participant "Backend (Spring Boot)" as BE
 database "DB" as DB
 
+== Interactive Login ==
 User -> FE: Click "Login"
-FE -> BE: POST /api/login {credentials}
-BE -> DB: Validate user
-DB --> BE: OK / Not Found
-BE --> FE: 200 OK + JWT (or 401)
+FE -> KC: OIDC Authorization Request (code + PKCE)
+KC --> User: Login + (optional) consent
+User -> KC: Credentials
+KC --> FE: Authorization Code (redirect to FE redirect_uri)
+
+== Token Exchange ==
+FE -> KC: Exchange Code + code_verifier
+KC --> FE: { access_token (JWT), refresh_token, id_token }
+
+== API Calls ==
+FE -> BE: HTTPS API call with Authorization: Bearer access_token
+BE -> BE: Validate JWT (issuer, signature/JWKS, expiry,\naudience contains [Angular-Banking-App, Banking-App])
+BE -> KC: (optional) JWKS fetch (cached)
+BE -> DB: Business operation
+DB --> BE: Data
+BE --> FE: 200 OK + response JSON
+
+== Refresh ==
+FE -> KC: Refresh Token Grant (refresh_token)
+KC --> FE: New access_token (+ optional new refresh_token)
 @enduml
 ....
+
+== Keycloak & OIDC (Authorization Code + PKCE)
+
+*Why OIDC with PKCE?*
+The SPA (Angular) is a public client with no client secret. **PKCE** adds a one-time proof (`code_verifier`/`code_challenge`) so an intercepted authorization code cannot be exchanged by an attacker.
+
+*Main steps (high level)*:
+1. **Authorization request** from the browser to Keycloak with `response_type=code` and `code_challenge`.
+2. **User authentication** (login, MFA, consent depending on realm policy).
+3. **Authorization code** returned to the SPA on the registered `redirect_uri`.
+4. **Code exchange** (SPA → Keycloak) with `code_verifier` → returns:
+   - **access_token** (JWT, short-lived) – used on every API call in `Authorization: Bearer …`
+   - **refresh_token** (opaque/JWT, longer-lived) – used to obtain a new access token without re-login
+   - **id_token** (JWT) – user profile for the client (not sent to the API)
+5. **API calls** – the SPA sends the *access token*; the backend **validates** it (issuer, signature, expiry, **audience**).
+
+*Access vs Refresh token*:
+- **Access Token**: short TTL, carries scopes/roles (`realm_access.roles`) and `aud`. If expired, API returns `401`.
+- **Refresh Token**: longer TTL, used by SPA to silently get a new access token (until refresh token expires or is revoked).
+
+== JWT Structure (What the encoded token looks like)
+
+A JWT is three Base64URL parts separated by dots:
+
+[source,text]
+----
+eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8v... (payload) ... . (signature)
+└──── header ─────┘ └──────────── payload (claims) ───────────┘ └── signature ──┘
+----
+
+*Header (example)*:
+[source,json]
+----
+{
+  "alg": "RS256",
+  "typ": "JWT",
+  "kid": "abc123"   // Key id for JWKS selection
+}
+----
+
+*Payload (example – relevant claims)*:
+[source,json]
+----
+{
+  "iss": "http://localhost:8081/realms/BankingApp",
+  "aud": ["Angular-Banking-App", "Banking-App"],
+  "azp": "Angular-Banking-App",
+  "exp": 1759078930,
+  "iat": 1759078630,
+  "sub": "ef...7adf",               // Subject (user id)
+  "email": "user@example.com",
+  "given_name": "Banking",
+  "family_name": "User",
+  "preferred_username": "banking-user",
+  "realm_access": { "roles": ["user","admin"] }
+}
+----
+
+*Signature*:
+- Created by Keycloak private key (RS256).
+- Backend verifies using **JWKS** (Keycloak’s public keys).
+
+[plantuml, target=jwt-structure, format=svg]
+....
+@startuml
+title JWT Layout
+rectangle "Header\n{\n alg: RS256\n typ: JWT\n kid: ...\n}" as H #DDFFDD
+rectangle "Payload (Claims)\n{\n iss, aud, sub, exp,\n email, given_name, family_name,\n realm_access.roles\n}" as P #DDDDFF
+rectangle "Signature\nRS256(private_key)" as S #FFDDDD
+H -[hidden]- P
+P -[hidden]- S
+@enduml
+....
+
+== Spring Security (JWT, Roles & Audience)
+
+The backend is a **resource server**: it validates incoming Keycloak JWTs and authorizes requests using **realm roles**.
+
+*Validation steps (per request)*:
+1. **Issuer** – token `iss` must match the configured Keycloak realm issuer (e.g. `http://localhost:8081/realms/BankingApp`).
+2. **Signature (JWKS)** – the `kid` in the header selects the public key from the realm’s JWKS; the signature is verified.
+3. **Expiry / Not Before** – `exp`/`nbf` are enforced.
+4. **Audience** – token `aud` **must include** all **expected audiences**:
+   `Angular-Banking-App,Banking-App`
+   This prevents tokens minted for other clients from being accepted.
+5. **Authorities (roles)** – we map `realm_access.roles` → `GrantedAuthority` (e.g., `ROLE_user`, `ROLE_admin`) and can use:
+   - `@PreAuthorize("hasRole('admin')")`
+   - `@PreAuthorize("@authz.canReadAccount(authentication, #id)")`
+
+*Typical configuration (conceptual)*:
+[source,java]
+----
+@Bean
+SecurityFilterChain security(HttpSecurity http) throws Exception {
+  http
+    .csrf(csrf -> csrf.disable())
+    .authorizeHttpRequests(auth -> auth
+      .requestMatchers("/public/**").permitAll()
+      .requestMatchers("/admin/**").hasRole("admin")
+      .anyRequest().authenticated()
+    )
+    .oauth2ResourceServer(oauth2 -> oauth2
+      .jwt(jwt -> jwt
+        .jwtAuthenticationConverter(realmRoleConverter())
+        .decoder(jwtDecoderWithAudience())
+      )
+    );
+  return http.build();
+}
+
+@Bean
+Converter<Jwt, ? extends AbstractAuthenticationToken> realmRoleConverter() {
+  // Extract roles from realm_access.roles and prefix with ROLE_
+}
+
+@Bean
+JwtDecoder jwtDecoderWithAudience() {
+  // Configure decoder with issuer + audience validator requiring
+  // ["Angular-Banking-App","Banking-App"]
+}
+----
+
+This ensures:
+- Only tokens from your Keycloak realm are accepted.
+- Only tokens **intended** for your API (audiences) pass.
+- Role checks use **realm roles** from `realm_access.roles`.
+
+
+
 
 == Checkstyle
 We use **Checkstyle** to enforce consistent Java coding standards and avoid common style issues.

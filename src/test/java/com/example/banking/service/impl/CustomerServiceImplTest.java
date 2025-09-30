@@ -126,7 +126,7 @@ class CustomerServiceImplTest {
 
     @Test
     void getAllCustomers_ok() {
-        // given
+
         var id1 = UUID.randomUUID();
         var id2 = UUID.randomUUID();
 
@@ -139,10 +139,8 @@ class CustomerServiceImplTest {
         given(customerEntityMapper.toDomain(e1)).willReturn(d1);
         given(customerEntityMapper.toDomain(e2)).willReturn(d2);
 
-        // when
         var result = customerService.getAllCustomers();
 
-        // then
         assertEquals(2, result.size());
         assertEquals(id1, result.get(0).getId());
         assertEquals(id2, result.get(1).getId());

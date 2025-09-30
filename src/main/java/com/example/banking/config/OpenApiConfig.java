@@ -31,7 +31,6 @@ public class OpenApiConfig {
                                                 .addString("openid", "OpenID scope")
                                                 .addString("profile", "User profile")
                                                 .addString("email", "Email")
-                                        // add API-specific scopes if you use them
                                 )
                 ));
 

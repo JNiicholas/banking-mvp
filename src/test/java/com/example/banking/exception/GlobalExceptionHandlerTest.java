@@ -24,12 +24,12 @@ class GlobalExceptionHandlerTest {
 
     @BeforeEach
     void setup() {
-        // If you have a TraceIdFilter, register it so ApiError includes a traceId (optional)
+
         OncePerRequestFilter traceFilter = null;
         try {
             traceFilter = new TraceIdFilter();
         } catch (Throwable ignored) {
-            // If the filter class/package name differs or doesn't exist, keep it null
+
         }
 
         var builder = MockMvcBuilders
@@ -40,8 +40,6 @@ class GlobalExceptionHandlerTest {
 
         mvc = builder.build();
     }
-
-    // ---------- Happy(ish) path: exception → handler → ApiError ----------
 
     @Test
     void notFound_is404_withApiError() throws Exception {
@@ -69,7 +67,6 @@ class GlobalExceptionHandlerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.error", containsStringIgnoringCase("conflict")))
-                // Your handler typically returns a safe message (no internal class names)
                 .andExpect(jsonPath("$.message", anyOf(
                         containsStringIgnoringCase("modified"),
                         containsStringIgnoringCase("conflict"),
@@ -79,7 +76,6 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void methodArgumentNotValid_is400_withFieldErrors() throws Exception {
-        // Triggers @Valid failure (name is @NotBlank)
         mvc.perform(post("/boom/validate")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
@@ -87,9 +83,6 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.error", containsStringIgnoringCase("bad request")))
                 .andExpect(jsonPath("$.message", not(blankOrNullString())));
-        // If your handler includes a field-errors array/key, you can assert on it:
-        // .andExpect(jsonPath("$.errors[0].field").value("name"))
-        // .andExpect(jsonPath("$.errors[0].message", containsString("must not be blank")));
     }
 
     @Test
@@ -100,8 +93,6 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.error", containsStringIgnoringCase("internal server error")))
                 .andExpect(jsonPath("$.message", not(blankOrNullString())));
     }
-
-    // ---------- Dummy controller to throw exceptions the handler cares about ----------
 
     @RestController
     @RequestMapping("/boom")

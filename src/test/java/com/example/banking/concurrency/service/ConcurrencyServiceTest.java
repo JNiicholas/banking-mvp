@@ -58,7 +58,7 @@ class ConcurrencyServiceTest {
 
         runId = UUID.randomUUID().toString().substring(0, 8);
         log.info("[{}] setUp: creating customer and account", runId);
-        // Create a customer
+
         callerExternalId = UUID.randomUUID();
         callerRealm = "BankingApp";
         var customer = customerRepository.save(
@@ -71,16 +71,14 @@ class ConcurrencyServiceTest {
                         .build());
         customerId = customer.getId();
 
-        // Create an account via service (exercise business path)
         Account created = accountService.createAccount(new CreateAccountRequest(customer.getId()));
         accountId = created.getId();
 
         log.info("[{}] Created accountId={} for customerId={}", runId, accountId, customerId);
-        // Seed with a known balance (optional; here keep 0.0000)
+
     }
 
     // --- Helper to run tasks in parallel and wait for them ---
-// --- Helper to run tasks in parallel and wait for them ---
     private static void runConcurrently(int threads, Runnable barrierTask) throws InterruptedException {
         ExecutorService pool = Executors.newFixedThreadPool(threads, r -> {
             Thread t = new Thread(r);

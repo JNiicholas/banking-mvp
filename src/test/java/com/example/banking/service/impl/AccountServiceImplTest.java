@@ -52,7 +52,6 @@ class AccountServiceImplTest {
         UUID customerId = UUID.randomUUID();
         var req = new CreateAccountRequest(customerId);
 
-
         // customer exists
         given(customerRepository.existsById(eq(customerId))).willReturn(true);
 

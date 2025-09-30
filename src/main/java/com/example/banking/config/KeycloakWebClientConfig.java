@@ -29,11 +29,8 @@ public class KeycloakWebClientConfig {
     @Bean("keycloakWebClient")
     public WebClient keycloakWebClient() {
         HttpClient httpClient = HttpClient.create()
-                // connection timeout in milliseconds
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) connectMs)
-                // overall response timeout
                 .responseTimeout(Duration.ofMillis(readMs))
-                // enable gzip/deflate
                 .compress(true);
 
         return WebClient.builder()

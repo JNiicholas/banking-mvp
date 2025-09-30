@@ -39,7 +39,7 @@ public class SecurityConfig {
     String expectedAudience;
 
     @Value("${app.security.client-roles.clients:}")
-    String clientRoleClients; // comma-separated list of client IDs to read roles from
+    String clientRoleClients; //Currently, we do not use client roles, only realm roles
 
     private static final String[] SWAGGER_WHITELIST = {
             "/v3/api-docs",
@@ -65,8 +65,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/accounts/*").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/accounts/*/balance").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/accounts/*/transactions").hasAnyRole("USER", "ADMIN")
-
-                        // All other /accounts/** endpoints restricted to USER
                         .requestMatchers("/accounts/**").hasRole("USER")
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

@@ -39,6 +39,7 @@ public class CustomerController {
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     @Operation(summary = "Create a new customer", description = "Creates a new customer and returns the customer details")
+    // TODO: Use the injected 'jwt' for logging/tracing (e.g., log sub/email/issuer)
     public ResponseEntity<CustomerResponse> create(@RequestBody @Valid CreateCustomerRequest req, @AuthenticationPrincipal Jwt jwt) {
         Customer customer = customerService.createCustomer(req);
         CustomerResponse body = customerMapper.toResponse(customer);
@@ -48,6 +49,7 @@ public class CustomerController {
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}")
     @Operation(summary = "Get customer by id", description = "Returns a single customer by its id")
+    // TODO: Use the injected 'jwt' for logging/tracing (e.g., log sub/email/issuer)
     public CustomerResponse getById(@PathVariable("id") UUID id, @AuthenticationPrincipal Jwt jwt) {
         Customer customer = customerService.getCustomer(id);
         return customerMapper.toResponse(customer);
@@ -56,6 +58,7 @@ public class CustomerController {
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     @Operation(summary = "List customers", description = "Returns all customers")
+    // TODO: Use the injected 'jwt' for logging/tracing (e.g., log sub/email/issuer)
     public List<CustomerResponse> list(@AuthenticationPrincipal Jwt jwt) {
         return customerService.getAllCustomers().stream()
                 .map(customerMapper::toResponse)
@@ -66,6 +69,7 @@ public class CustomerController {
     @PostMapping("/accounts")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create a new account", description = "Creates a new account for an existing customer")
+    // TODO: Use the injected 'jwt' for logging/tracing (e.g., log sub/email/issuer)
     public AccountResponse createAccount(@RequestBody @Valid CreateAccountRequest req, @AuthenticationPrincipal Jwt jwt) {
         Account account = accountService.createAccount(req);
         return accountMapper.toResponse(account);

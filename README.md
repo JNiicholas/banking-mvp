@@ -47,6 +47,10 @@ mvn checkstyle:checkstyle
 ## Keycloak
 
 - **Admin Console:** http://localhost:8081/admin/
+- **Realm export JSON:** see `config/keycloak/realm-export` — this file contains the Keycloak realm configuration used by this project.
+
+
+
 **OWASP Dependency-Check** identifies known CVEs in third‑party dependencies by analyzing project artifacts (Maven, Gradle, etc.) and matching them to NVD/CPE data. It produces an HTML/JSON/XML report.
 
 ### How to run (Maven)
@@ -118,7 +122,7 @@ Project Lombok reduces Java boilerplate (getters/setters, constructors, builders
 
 
 
-## Example API calls
+## Example API calls (Only Examples - Requires valid token)
 
 Create customer:
 ```bash
@@ -156,7 +160,7 @@ mvn -q -DskipTests=false test
 ```
 
 ## Notes
-- Uses an in-memory H2 database for data persistence.
+- Uses an Postgres database for data persistence.
 - Basic CRUD APIs for customers and accounts, with transaction support (deposit/withdraw).
 - Validation and error handling via `@ControllerAdvice`.
 - OWASP Dependency-Check integrated into the build for security scanning.

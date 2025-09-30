@@ -43,12 +43,11 @@ class AccountControllerSecurityTest {
     MockMvc mvc;
 
     @MockitoBean(name = "authz")
-    AuthorizationService authz; // used by @PreAuthorize
+    AuthorizationService authz;
 
     @MockitoBean
-    AccountService accountService; // controller dependency
+    AccountService accountService;
 
-    // Mappers are controller dependencies; mock to avoid wiring MapStruct
     @MockitoBean
     TransactionMapper transactionMapper;
 
@@ -57,7 +56,7 @@ class AccountControllerSecurityTest {
 
     private SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor jwtWithRole(String role) {
         String sub = UUID.randomUUID().toString();
-        String issuer = "http://localhost:8081/realms/BankingApp"; // matches controller's expected realm source
+        String issuer = "http://localhost:8081/realms/BankingApp";
         return SecurityMockMvcRequestPostProcessors.jwt()
                 .jwt(j -> j.subject(sub).issuer(issuer))
                 .authorities(new SimpleGrantedAuthority("ROLE_" + role));
@@ -67,9 +66,7 @@ class AccountControllerSecurityTest {
     @DisplayName("USER owner: can read transactions -> 200")
     void userOwner_canReadTransactions_200() throws Exception {
         UUID accountId = UUID.randomUUID();
-        // Authorization: owner -> allowed
         given(authz.canReadAccount(any(), eq(accountId))).willReturn(true);
-        // Service: return empty list to avoid mapping
         given(accountService.getLastTransactions(eq(accountId), anyInt(), any(), any())).willReturn(List.of());
 
         mvc.perform(get("/accounts/{id}/transactions", accountId)
@@ -119,7 +116,7 @@ class AccountControllerSecurityTest {
     void admin_canReadAccountById_200() throws Exception {
         UUID accountId = UUID.randomUUID();
         given(authz.canReadAccount(any(), eq(accountId))).willReturn(true);
-        // Return mocked domain and response to satisfy controller mapping
+
         Account domain = Mockito.mock(Account.class);
         AccountResponse response = Mockito.mock(AccountResponse.class);
         given(accountService.getAccount(eq(accountId), any(), any())).willReturn(domain);

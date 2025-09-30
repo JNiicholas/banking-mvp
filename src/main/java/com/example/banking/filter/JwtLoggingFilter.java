@@ -52,7 +52,6 @@ public class JwtLoggingFilter extends OncePerRequestFilter {
                 String scope = jwt.getClaimAsString("scope");
                 String jti = jwt.getId();
 
-                // Optional realm roles (Keycloak specific)
                 @SuppressWarnings("unchecked")
                 Map<String, Object> realmAccess = jwt.getClaim("realm_access");
                 Object roles = realmAccess != null ? realmAccess.get("roles") : null;
