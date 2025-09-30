@@ -42,6 +42,8 @@ app:
       clients: Angular-Banking-App,Banking-App
 
 springdoc:
+  default-produces-media-type: application/json
+  default-consumes-media-type: application/json
   swagger-ui:
     oauth:
       client-id: Banking-App

@@ -19,12 +19,13 @@ public class AuthorizationService {
     private String realmName;
 
     public boolean canReadAccount(Authentication authentication, UUID accountId) {
-        // 1. Check if user has ADMIN role
+        // Check if user has ADMIN role
         if (authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
             return true;
         }
 
+        // If user is not admin, user must be owner of account
         String callerSub = ((JwtAuthenticationToken) authentication).getToken().getSubject();
         UUID callerExternalId = UUID.fromString(callerSub);
         return ownershipChecker.isOwner(accountId, callerExternalId, realmName);
