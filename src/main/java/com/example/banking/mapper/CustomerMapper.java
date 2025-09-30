@@ -13,6 +13,7 @@ import org.mapstruct.factory.Mappers;
 public interface CustomerMapper {
     CustomerMapper INSTANCE = Mappers.getMapper(CustomerMapper.class);
 
+    //TODO: Remove explicit mapping
     @Mapping(target = "id", source = "id")
     @Mapping(target = "firstName", source = "firstName")
     @Mapping(target = "lastName", source = "lastName")
@@ -22,6 +23,7 @@ public interface CustomerMapper {
     @Mapping(target = "accounts", source = "accounts")
     CustomerResponse toResponse(Customer domain);
 
+    //TODO: Remove explicit mapping
     @Mapping(target = "id", source = "id")
     @Mapping(target = "firstName", source = "firstName")
     @Mapping(target = "lastName", source = "lastName")

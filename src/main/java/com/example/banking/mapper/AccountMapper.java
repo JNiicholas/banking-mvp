@@ -12,7 +12,7 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface AccountMapper {
 
-    // Domain -> DTO
+    //TODO: Remove explicit mapping
     @Mapping(target = "id", source = "id")
     @Mapping(target = "customerId", source = "customerId")
     @Mapping(target = "balance", source = "balance")
@@ -21,7 +21,7 @@ public interface AccountMapper {
     @Mapping(target = "ibanDisplay", source = "ibanDisplay")
     AccountResponse toResponse(Account account);
 
-    // Entity -> Domain
+    //TODO: Remove explicit mapping
     @Mapping(target = "id", source = "id")
     @Mapping(target = "customerId", source = "customer.id")
     @Mapping(target = "balance", source = "balance")
@@ -30,7 +30,7 @@ public interface AccountMapper {
     @Mapping(target = "ibanDisplay", source = "ibanDisplay")
     Account toDomain(AccountEntity entity);
 
-    // Domain -> DTO summary
+    //TODO: Remove explicit mapping
     @Mapping(target = "id", source = "id")
     @Mapping(target = "balance", source = "balance")
     @Mapping(target = "ibanCountry", source = "ibanCountry")

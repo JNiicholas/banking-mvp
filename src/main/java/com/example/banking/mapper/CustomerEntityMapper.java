@@ -13,6 +13,7 @@ public interface CustomerEntityMapper {
     @InheritInverseConfiguration(name = "toEntity")
     Customer toDomain(CustomerEntity entity);
 
+    //TODO: Remove explicit mapping
     @Mapping(target = "id", source = "id")
     @Mapping(target = "firstName", source = "firstName")
     @Mapping(target = "lastName", source = "lastName")

@@ -9,7 +9,7 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface AccountEntityMapper {
 
-    // entity -> domain (id is fine to expose to the domain)
+    //TODO: Remove explicit mapping
     @Mapping(target = "id", source = "id")
     @Mapping(target = "customerId", source = "customer.id")
     @Mapping(target = "balance", source = "balance")
@@ -18,7 +18,7 @@ public interface AccountEntityMapper {
     @Mapping(target = "ibanDisplay", source = "ibanDisplay")
     Account toDomain(AccountEntity entity);
 
-    // domain -> entity (CREATE): let JPA/DB set id & version
+    //TODO: Remove explicit mapping
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "customer.id", source = "customerId")
@@ -28,7 +28,7 @@ public interface AccountEntityMapper {
     @Mapping(target = "ibanDisplay", source = "ibanDisplay")
     AccountEntity toNewEntity(Account domain);
 
-    // domain -> entity (UPDATE): copy mutable fields onto a managed entity
+    //TODO: Remove explicit mapping
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "customer.id", source = "customerId")

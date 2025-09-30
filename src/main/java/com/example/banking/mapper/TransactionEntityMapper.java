@@ -9,6 +9,7 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface TransactionEntityMapper {
 
+    //TODO: Remove explicit mapping
     @Mapping(target = "id", source = "id")
     @Mapping(target = "accountId", source = "accountId")
     @Mapping(target = "timestamp", source = "timestamp")
@@ -17,6 +18,7 @@ public interface TransactionEntityMapper {
     @Mapping(target = "balanceAfter", source = "balanceAfter")
     Transaction toDomain(TransactionEntity entity);
 
+    //TODO: Remove explicit mapping
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "accountId", source = "accountId")
     @Mapping(target = "timestamp", source = "timestamp")
