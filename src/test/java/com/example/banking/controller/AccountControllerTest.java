@@ -2,7 +2,6 @@ package com.example.banking.controller;
 
 import com.example.banking.dto.AccountResponse;
 import com.example.banking.dto.AmountRequest;
-import com.example.banking.dto.CreateAccountRequest;
 import com.example.banking.dto.TransactionResponse;
 import com.example.banking.exception.NotFoundException;
 import com.example.banking.mapper.AccountMapper;
@@ -94,7 +93,7 @@ class AccountControllerTest {
                             j.issuer("http://localhost:8081/realms/BankingApp");
                         }).authorities(new SimpleGrantedAuthority("ROLE_USER"))))
                 .andExpect(status().isNotFound());
-        // If you assert ApiError shape, also check $.code == NOT_FOUND, etc.
+
     }
 
     @Test

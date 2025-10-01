@@ -266,7 +266,6 @@ class ConcurrencyServiceTest {
     void tearDown() {
 
         log.info("[{}] tearDown: cleaning test data (accountId={}, customerId={})", runId, accountId, customerId);
-        // Clean just what we created in this class (keeps your manual local data separate)
         if (accountId != null) {
             // delete child rows first to satisfy FK constraint
             transactionRepository.deleteByAccountId(accountId);

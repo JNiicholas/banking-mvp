@@ -42,10 +42,10 @@ class CustomerControllerTest {
     @Autowired ObjectMapper objectMapper;
 
     @MockitoBean
-    CustomerService customerService;   // use interface, not impl
+    CustomerService customerService;
 
     @MockitoBean
-    CustomerMapper customerMapper;     // controller depends on mapper for DTO mapping
+    CustomerMapper customerMapper;
 
     @MockitoBean
     AccountService accountService;
@@ -56,7 +56,7 @@ class CustomerControllerTest {
     @Test
     @DisplayName("POST /customers -> 201 with body & (optional) Location header")
     void createCustomer_ok() throws Exception {
-        // arrange
+
         var id = UUID.randomUUID();
         var req = CreateCustomerRequest.builder()
                 .firstName("Jonas")
@@ -75,27 +75,21 @@ class CustomerControllerTest {
         given(customerService.createCustomer(eq(req))).willReturn(domain);
         given(customerMapper.toResponse(eq(domain))).willReturn(dto);
 
-        // act + assert
         mvc.perform(post("/customers").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
-                // Adjust status depending on your controller:
-                // If your controller returns 201 Created, keep isCreated();
-                // If it returns 200 OK, change to status().isOk()
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.firstName").value("Jonas"))
                 .andExpect(jsonPath("$.lastName").value("Iqbal"))
                 .andExpect(jsonPath("$.email").value("jonas@iqbal.dk"))
-                // If your controller sets Location: /customers/{id}, this will pass. If not, remove it.
                 .andExpect(header().string("Location", "/customers/" + id));
     }
 
     @Test
     @DisplayName("POST /customers -> 400 when validation fails")
     void createCustomer_validationError() throws Exception {
-        // firstName is blank, email is invalid
         var badReq = CreateCustomerRequest.builder()
                 .firstName(" ")
                 .lastName("Iqbal")
@@ -106,8 +100,6 @@ class CustomerControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(badReq)))
                 .andExpect(status().isBadRequest());
-        // Optionally assert error structure produced by your GlobalExceptionHandler
-        // .andExpect(jsonPath("$.error").value("Bad Request"));
     }
 
     @Test
@@ -143,8 +135,6 @@ class CustomerControllerTest {
 
         mvc.perform(get("/customers/{id}", id))
                 .andExpect(status().isNotFound());
-        // If your GlobalExceptionHandler returns an ApiError JSON:
-        // .andExpect(jsonPath("$.error").value("Not Found"));
     }
 
     @Test
@@ -215,7 +205,5 @@ class CustomerControllerTest {
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.customerId").value(customerId.toString()))
                 .andExpect(jsonPath("$.balance").value(0.0));
-        // If your controller sets Location, you can add:
-        // .andExpect(header().string("Location", "/accounts/" + id));
     }
 }
