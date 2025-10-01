@@ -31,7 +31,7 @@ class CustomerServiceImplTest {
 
     @Test
     void createCustomer_ok() {
-        // given
+
         var req = CreateCustomerRequest.builder()
                 .firstName("Jonas")
                 .lastName("Iqbal")
@@ -59,15 +59,13 @@ class CustomerServiceImplTest {
                 .externalAuthId(UUID.fromString(kcUserId))
                 .build();
 
-        // repo will return a persisted entity (id filled by DB)
+
         given(customerRepository.save(any(CustomerEntity.class))).willReturn(savedEntity);
-        // mapper maps entity -> domain
+
         given(customerEntityMapper.toDomain(savedEntity)).willReturn(domain);
 
-        // when
         var result = customerService.createCustomer(req);
 
-        // then
         assertNotNull(result);
         assertEquals(savedId, result.getId());
         assertEquals("Jonas", result.getFirstName());
@@ -85,7 +83,7 @@ class CustomerServiceImplTest {
 
     @Test
     void getCustomer_found() {
-        // given
+
         var id = UUID.randomUUID();
         var entity = CustomerEntity.builder()
                 .id(id).firstName("Alice").lastName("Smith").email("alice@example.com").build();
@@ -95,10 +93,8 @@ class CustomerServiceImplTest {
         given(customerRepository.findOneById(id)).willReturn(Optional.of(entity));
         given(customerEntityMapper.toDomain(entity)).willReturn(domain);
 
-        // when
         var result = customerService.getCustomer(id);
 
-        // then
         assertNotNull(result);
         assertEquals(id, result.getId());
         assertEquals("Alice", result.getFirstName());
@@ -113,11 +109,10 @@ class CustomerServiceImplTest {
 
     @Test
     void getCustomer_notFound() {
-        // given
+
         var id = UUID.randomUUID();
         given(customerRepository.findOneById(id)).willReturn(Optional.empty());
 
-        // when / then
         assertThrows(NotFoundException.class, () -> customerService.getCustomer(id));
 
         then(customerRepository).should().findOneById(id);

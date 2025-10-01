@@ -64,7 +64,7 @@ class AccountServiceImplTest {
                 .willAnswer(inv -> {
                     Account a = inv.getArgument(0);
                     var e = new AccountEntity();
-                    e.setId(UUID.randomUUID());            // DB will set in real life; any UUID is fine for the test
+                    e.setId(UUID.randomUUID());
                     var ce = new CustomerEntity();
                     ce.setId(a.getCustomerId());
                     e.setCustomer(ce);
@@ -72,7 +72,7 @@ class AccountServiceImplTest {
                     e.setVersion(0L);
                     return e;
                 });
-        // DB generates account id
+
         UUID accountId = UUID.randomUUID();
         var savedEntity = AccountEntityBuilder(accountId, customerId, bd("0.0000"));
         given(accountRepository.save(any(AccountEntity.class))).willReturn(savedEntity);
@@ -130,7 +130,7 @@ class AccountServiceImplTest {
 
         given(accountRepository.findByIdForUpdate(id)).willReturn(Optional.of(entityBefore));
         given(accountRepository.save(entityBefore)).willReturn(entityAfter);
-        // map domain tx -> entity so repository.save(...) does not get null
+
         given(transactionEntityMapper.toEntity(any(Transaction.class)))
                 .willAnswer(inv -> {
                     Transaction tx = inv.getArgument(0);
@@ -223,7 +223,7 @@ class AccountServiceImplTest {
         given(accountRepository.findByIdForUpdate(id)).willReturn(Optional.of(entity));
 
         assertThrows(BadRequestException.class, () -> accountService.withdraw(id, bd("20.00"), callerExternalId, callerRealm));
-        // should not save account or transaction
+
         then(accountRepository).should(never()).save(any(AccountEntity.class));
         then(transactionRepository).shouldHaveNoInteractions();
     }
